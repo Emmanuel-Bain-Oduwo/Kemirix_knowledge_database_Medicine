@@ -1,0 +1,32 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+.vscode/
+.idea/
+
+# Never commit downloaded/raw source data
+raw/
+downloads/
+data/
+*.zip
+*.gz
+*.7z
+*.rar
+*.sqlite
+*.db
+*.dump
+*.parquet
+*.pdf
+*.xml
+*.csv
+*.tsv
+
+# Local database/tooling files
+*.log
+.pgpass
