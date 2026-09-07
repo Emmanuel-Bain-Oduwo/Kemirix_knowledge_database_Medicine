@@ -30,3 +30,9 @@ data/
 # Local database/tooling files
 *.log
 .pgpass
+
+# Local coordinator lock and verbose runs (canonical summaries remain in ops/reports)
+ops/.coordinator.lock
+agent-runs/
+.env.*
+!.env.example

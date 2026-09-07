@@ -1,0 +1,8 @@
+# Phase 0: no executable domain DDL. Promote only in a reviewed migration task.
+migrations:
+  - path: migrations/001_kmx.sql
+    state: pending
+  - path: migrations/002_evidence.sql
+    state: pending
+  - path: migrations/003_rules.sql
+    state: pending
