@@ -1,0 +1,14 @@
+lane: 18
+source_id: onsides
+name: OnSIDES
+acquisition: bulk_release
+format: csv_sqlite
+jurisdiction: GLOBAL
+role: supporting
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [RXCUI]
+evidence: supporting
+rules: false
+categories: [adverse_effects]
+object_storage_prefix: onsides
+rate_limit: not_applicable

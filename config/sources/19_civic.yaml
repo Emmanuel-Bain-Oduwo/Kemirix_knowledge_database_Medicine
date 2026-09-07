@@ -1,0 +1,14 @@
+lane: 19
+source_id: civic
+name: CIViC
+acquisition: bulk_release_or_api
+format: tsv_vcf_json
+jurisdiction: GLOBAL
+role: supporting
+kmx_levels: [ingredient]
+identifiers: [THERAPY_ID, NCIT, CHEMICAL_CROSSREF]
+evidence: supporting_oncology
+rules: false_initially
+categories: [pharmacogenomic, treatment_appropriateness, indication]
+object_storage_prefix: civic
+rate_limit: "bulk preferred; 2 requests/second internal policy for API"

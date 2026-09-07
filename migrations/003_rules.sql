@@ -1,0 +1,6 @@
+-- ARCHITECTURE PLACEHOLDER — no executable DDL yet.
+-- Planned schema: rules
+-- Planned tables:
+--   rules.clinical_rule
+--   rules.rule_evidence
+--   rules.rule_test

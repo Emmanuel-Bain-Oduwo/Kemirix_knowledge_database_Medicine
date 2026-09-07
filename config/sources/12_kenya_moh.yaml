@@ -1,0 +1,14 @@
+lane: 12
+source_id: kenya_moh
+name: Kenya Ministry of Health Clinical Guidelines
+acquisition: official_pdf_index
+format: pdf
+jurisdiction: KE
+role: primary_rule
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [MEDICINE_NAME, STRENGTH, DOSE_FORM]
+evidence: primary
+rules: true
+categories: [indication, treatment_appropriateness, dosing, monitoring, drug_disease, paediatric, pregnancy, follow_up]
+object_storage_prefix: kenya_moh
+rate_limit: "1 request/second if automated retrieval is permitted"

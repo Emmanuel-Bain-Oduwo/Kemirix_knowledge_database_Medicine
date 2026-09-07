@@ -1,0 +1,14 @@
+lane: 3
+source_id: gsrs_unii
+name: GSRS / UNII
+acquisition: api_or_public_dump
+format: json
+jurisdiction: GLOBAL
+role: identity_only
+kmx_levels: [ingredient]
+identifiers: [UNII]
+evidence: false
+rules: false
+categories: []
+object_storage_prefix: gsrs_unii
+rate_limit: "1 request/second internal default for API"

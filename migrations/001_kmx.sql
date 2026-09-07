@@ -1,0 +1,8 @@
+-- ARCHITECTURE PLACEHOLDER — no executable DDL yet.
+-- Planned schema: kmx
+-- Planned tables:
+--   kmx.registry
+--   kmx.contains
+--   kmx.external_identifier
+--   kmx.name_index
+--   kmx.mapping_exception

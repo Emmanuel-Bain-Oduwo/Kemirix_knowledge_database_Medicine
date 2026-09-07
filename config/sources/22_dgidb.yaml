@@ -1,0 +1,14 @@
+lane: 22
+source_id: dgidb
+name: DGIdb
+acquisition: bulk_tsv_sql_or_api
+format: tsv_sql_json
+jurisdiction: GLOBAL
+role: supporting
+kmx_levels: [ingredient]
+identifiers: [EXTERNAL_DRUG_ID, CHEMBL_ID]
+evidence: supporting_drug_gene
+rules: false
+categories: [pharmacogenomic]
+object_storage_prefix: dgidb
+rate_limit: bulk_preferred

@@ -1,0 +1,14 @@
+lane: 10
+source_id: keml
+name: Kenya Essential Medicines List
+acquisition: manual_official_pdf
+format: pdf
+jurisdiction: KE
+role: catalogue_only
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [MEDICINE_NAME, STRENGTH, DOSE_FORM]
+evidence: false
+rules: false
+categories: []
+object_storage_prefix: keml
+rate_limit: manual

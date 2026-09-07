@@ -1,0 +1,14 @@
+lane: 4
+source_id: chebi_unichem
+name: ChEBI / UniChem
+acquisition: bulk_database_plus_api
+format: postgres_dump_and_json
+jurisdiction: GLOBAL
+role: supporting
+kmx_levels: [ingredient]
+identifiers: [CHEBI_ID, CHEMBL_ID, UNII]
+evidence: chemical_identity_support
+rules: false
+categories: []
+object_storage_prefix: chebi_unichem
+rate_limit: "1 request/second internal default for UniChem API"

@@ -1,0 +1,14 @@
+lane: 14
+source_id: kdigo
+name: KDIGO
+acquisition: official_guideline_pdf
+format: pdf
+jurisdiction: GLOBAL
+role: primary_rule
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [MEDICINE_NAME, DRUG_CLASS]
+evidence: primary_renal
+rules: explicit_computable_recommendations_only
+categories: [renal, laboratory, monitoring, drug_disease, polypharmacy, treatment_appropriateness]
+object_storage_prefix: kdigo
+rate_limit: document_download

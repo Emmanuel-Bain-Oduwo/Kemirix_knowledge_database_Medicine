@@ -1,0 +1,14 @@
+lane: 26
+source_id: ema
+name: EMA SmPC / Product Information
+acquisition: json_feed_plus_pdf
+format: json_pdf
+jurisdiction: EU_EEA
+role: primary_rule
+kmx_levels: [ingredient, clinical_drug, product]
+identifiers: [EMA_PRODUCT_NUMBER, ACTIVE_SUBSTANCE, PRODUCT_NAME]
+evidence: primary
+rules: true
+categories: [indication, contraindication, drug_disease, drug_drug, drug_food_substance, allergy_hypersensitivity, dosing, renal, hepatic, paediatric, geriatric, pregnancy, lactation, laboratory, monitoring, adverse_effects, administration, high_alert_safety, counselling]
+object_storage_prefix: ema
+rate_limit: "machine-readable feed preferred; polite document retrieval"

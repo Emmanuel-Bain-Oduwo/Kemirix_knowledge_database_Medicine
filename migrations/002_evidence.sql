@@ -1,0 +1,7 @@
+-- ARCHITECTURE PLACEHOLDER — no executable DDL yet.
+-- Planned schema: evidence
+-- Planned tables:
+--   evidence.source
+--   evidence.source_block
+--   evidence.clinical_evidence
+--   evidence.evidence_support

@@ -1,0 +1,14 @@
+lane: 17
+source_id: drugcentral
+name: DrugCentral
+acquisition: bulk_database_or_tsv
+format: postgres_dump_tsv
+jurisdiction: GLOBAL
+role: supporting
+kmx_levels: [ingredient]
+identifiers: [RXCUI, UNII, CHEMBL_ID]
+evidence: supporting
+rules: false
+categories: [indication, contraindication, adverse_effects, treatment_appropriateness]
+object_storage_prefix: drugcentral
+rate_limit: not_applicable_for_bulk

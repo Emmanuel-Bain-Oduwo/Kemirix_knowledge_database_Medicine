@@ -1,0 +1,14 @@
+lane: 21
+source_id: gtopdb
+name: Guide to Pharmacology
+acquisition: bulk_database
+format: postgres_csv
+jurisdiction: GLOBAL
+role: supporting
+kmx_levels: [ingredient]
+identifiers: [CHEMBL_ID, CHEBI_ID, LIGAND_ID]
+evidence: supporting_pharmacology
+rules: false
+categories: [indication, treatment_appropriateness]
+object_storage_prefix: gtopdb
+rate_limit: bulk_preferred

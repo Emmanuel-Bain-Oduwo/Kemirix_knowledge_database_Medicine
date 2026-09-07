@@ -1,0 +1,14 @@
+lane: 7
+source_id: openfda_label
+name: openFDA Drug Label
+acquisition: api
+format: json
+jurisdiction: US
+role: duplicate_projection
+kmx_levels: [ingredient, clinical_drug, product]
+identifiers: [RXCUI, UNII, SPL_SET_ID, NDC]
+evidence: structured_fda_label_projection
+rules: false
+categories: [indication, contraindication, drug_disease, drug_drug, drug_food_substance, dosing, renal, hepatic, paediatric, geriatric, pregnancy, lactation, monitoring, adverse_effects, administration, counselling]
+object_storage_prefix: openfda_label
+rate_limit: "3 requests/second internal policy with API key; respect provider daily/minute quotas"

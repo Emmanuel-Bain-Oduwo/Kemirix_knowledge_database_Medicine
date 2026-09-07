@@ -1,0 +1,14 @@
+lane: 11
+source_id: knmf
+name: Kenya National Medicines Formulary
+acquisition: manual_official_document
+format: pdf_or_document
+jurisdiction: KE
+role: primary_rule
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [MEDICINE_NAME, STRENGTH, DOSE_FORM]
+evidence: primary_when_source_is_approved
+rules: executable_recommendations_only
+categories: [indication, contraindication, drug_drug, dosing, renal, hepatic, paediatric, geriatric, pregnancy, lactation, monitoring, adverse_effects, administration, counselling]
+object_storage_prefix: knmf
+rate_limit: manual

@@ -1,0 +1,22 @@
+source_config_fields:
+  - lane
+  - source_id
+  - name
+  - acquisition
+  - format
+  - jurisdiction
+  - role
+  - kmx_levels
+  - identifiers
+  - evidence
+  - rules
+  - categories
+  - object_storage_prefix
+  - rate_limit
+
+roles:
+  - primary_rule
+  - supporting
+  - identity_only
+  - catalogue_only
+  - duplicate_projection

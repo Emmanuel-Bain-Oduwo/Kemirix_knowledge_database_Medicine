@@ -1,0 +1,14 @@
+lane: 15
+source_id: cpic_clinpgx
+name: CPIC / ClinPGx
+acquisition: api
+format: json
+jurisdiction: GLOBAL
+role: primary_rule
+kmx_levels: [ingredient]
+identifiers: [DRUG_ID, RXCUI, PHARMGKB_OR_CLINPGX_ID]
+evidence: "CPIC guideline primary; other ClinPGx annotations supporting unless authoritative guideline"
+rules: guideline_recommendations
+categories: [pharmacogenomic, dosing, treatment_appropriateness]
+object_storage_prefix: cpic_clinpgx
+rate_limit: "up to 2 requests/second internal policy"

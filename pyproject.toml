@@ -1,0 +1,8 @@
+[project]
+name = "kemirix-knowledge-database-medicine"
+version = "0.1.0"
+description = "Kemirix medication identity, clinical evidence and deterministic rule foundation"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

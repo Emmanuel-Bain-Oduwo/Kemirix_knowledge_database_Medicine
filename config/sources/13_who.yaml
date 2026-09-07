@@ -1,0 +1,14 @@
+lane: 13
+source_id: who
+name: WHO EML / AWaRe / actionable treatment guidance
+acquisition: official_data_and_pdf
+format: pdf_csv_xlsx_or_json
+jurisdiction: GLOBAL
+role: primary_rule
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [MEDICINE_NAME, ATC, STRENGTH, DOSE_FORM]
+evidence: "EML/AWaRe classification = catalogue; actionable guidance = clinical Evidence"
+rules: "actionable guidance only"
+categories: [indication, treatment_appropriateness, dosing, administration, paediatric, monitoring, counselling]
+object_storage_prefix: who
+rate_limit: "bulk/document download preferred"

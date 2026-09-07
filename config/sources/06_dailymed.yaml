@@ -1,0 +1,14 @@
+lane: 6
+source_id: dailymed
+name: DailyMed
+acquisition: api
+format: xml_json
+jurisdiction: US
+role: primary_rule
+kmx_levels: [ingredient, clinical_drug, product]
+identifiers: [RXCUI, SETID, UNII, NDC]
+evidence: primary
+rules: true
+categories: [indication, contraindication, drug_disease, drug_drug, drug_food_substance, allergy_hypersensitivity, dosing, renal, hepatic, paediatric, geriatric, pregnancy, lactation, laboratory, monitoring, adverse_effects, administration, high_alert_safety, counselling]
+object_storage_prefix: dailymed
+rate_limit: "2 requests/second internal policy; cache every successful response"

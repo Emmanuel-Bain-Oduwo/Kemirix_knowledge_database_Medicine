@@ -1,0 +1,14 @@
+lane: 27
+source_id: mhra
+name: MHRA SPC
+acquisition: official_web_pdf
+format: html_pdf
+jurisdiction: UK
+role: primary_rule
+kmx_levels: [ingredient, clinical_drug, product]
+identifiers: [PL_NUMBER, PLGB_NUMBER, ACTIVE_SUBSTANCE, PRODUCT_NAME]
+evidence: primary
+rules: true
+categories: [indication, contraindication, drug_disease, drug_drug, drug_food_substance, allergy_hypersensitivity, dosing, renal, hepatic, paediatric, geriatric, pregnancy, lactation, laboratory, monitoring, adverse_effects, administration, high_alert_safety, counselling]
+object_storage_prefix: mhra
+rate_limit: "1 request/second if automated retrieval is permitted"

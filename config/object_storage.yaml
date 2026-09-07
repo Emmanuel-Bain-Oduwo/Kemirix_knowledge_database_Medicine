@@ -1,0 +1,19 @@
+object_storage:
+  provider: ovh_s3_compatible
+  bucket: kemirix-knowledge-raw
+  purpose: raw_source_vault
+  layout: "<source_id>/<release_or_snapshot>/[<record_id>/]original/"
+  manifest: manifest.json
+  store:
+    - api_responses
+    - database_dumps
+    - pdfs
+    - xml
+    - json
+    - csv
+    - tsv
+    - parquet
+  never_store_as_authority:
+    - kmx_normalized_truth
+    - clinical_evidence
+    - clinical_rules

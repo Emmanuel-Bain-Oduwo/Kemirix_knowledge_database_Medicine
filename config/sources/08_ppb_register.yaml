@@ -1,0 +1,14 @@
+lane: 8
+source_id: ppb_register
+name: Kenya PPB Product Register
+acquisition: official_web_snapshot
+format: html_table_or_export
+jurisdiction: KE
+role: catalogue_only
+kmx_levels: [ingredient, clinical_drug, product]
+identifiers: [PPB_REGISTRATION, INN, TRADE_NAME]
+evidence: false
+rules: false
+categories: []
+object_storage_prefix: ppb_register
+rate_limit: "1 request/second if automated access is permitted"

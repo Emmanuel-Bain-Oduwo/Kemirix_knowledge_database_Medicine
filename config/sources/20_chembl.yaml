@@ -1,0 +1,14 @@
+lane: 20
+source_id: chembl
+name: ChEMBL
+acquisition: bulk_database
+format: postgres_sqlite_mysql
+jurisdiction: GLOBAL
+role: supporting
+kmx_levels: [ingredient]
+identifiers: [CHEMBL_ID]
+evidence: supporting_mechanism_target
+rules: false
+categories: [indication, drug_drug, treatment_appropriateness]
+object_storage_prefix: chembl
+rate_limit: not_applicable_for_bulk

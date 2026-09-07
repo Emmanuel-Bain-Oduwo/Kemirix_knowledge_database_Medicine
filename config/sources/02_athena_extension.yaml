@@ -1,0 +1,14 @@
+lane: 2
+source_id: athena_extension
+name: Athena extra vocabularies / RxNorm Extension
+acquisition: bulk_manual_export
+format: csv
+jurisdiction: GLOBAL
+role: identity_only
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [OMOP_CONCEPT_ID, RXCUI]
+evidence: false
+rules: false
+categories: []
+object_storage_prefix: athena_extension
+rate_limit: not_applicable

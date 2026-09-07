@@ -1,0 +1,14 @@
+lane: 25
+source_id: ciel_ocl
+name: CIEL / Open Concept Lab
+acquisition: export_api
+format: zip_json
+jurisdiction: GLOBAL
+role: identity_only
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [CIEL_ID, RXCUI]
+evidence: false
+rules: false
+categories: []
+object_storage_prefix: ciel_ocl
+rate_limit: "1 request/second internal policy; versioned export preferred"

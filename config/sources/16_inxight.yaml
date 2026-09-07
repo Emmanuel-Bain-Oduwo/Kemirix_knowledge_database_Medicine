@@ -1,0 +1,14 @@
+lane: 16
+source_id: inxight
+name: NCATS Inxight Drugs
+acquisition: bulk_download
+format: tsv
+jurisdiction: GLOBAL
+role: supporting
+kmx_levels: [ingredient]
+identifiers: [UNII]
+evidence: supporting
+rules: false
+categories: [drug_drug, adverse_effects, high_alert_safety]
+object_storage_prefix: inxight
+rate_limit: not_applicable

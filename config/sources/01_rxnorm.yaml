@@ -1,0 +1,14 @@
+lane: 1
+source_id: rxnorm_athena
+name: RxNorm / Athena
+acquisition: bulk_manual_export
+format: rrf_csv
+jurisdiction: GLOBAL
+role: identity_only
+kmx_levels: [ingredient, clinical_drug]
+identifiers: [RXCUI, OMOP_CONCEPT_ID]
+evidence: false
+rules: false
+categories: []
+object_storage_prefix: rxnorm_athena
+rate_limit: not_applicable

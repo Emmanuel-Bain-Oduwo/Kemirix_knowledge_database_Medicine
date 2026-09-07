@@ -1,0 +1,22 @@
+database:
+  provider: ovh_managed_postgresql
+  name: kemirix_knowledge
+  ssl_required: true
+  schemas:
+    kmx:
+      - registry
+      - contains
+      - external_identifier
+      - name_index
+      - mapping_exception
+    evidence:
+      - source
+      - source_block
+      - clinical_evidence
+      - evidence_support
+    rules:
+      - clinical_rule
+      - rule_evidence
+      - rule_test
+viewer:
+  tool: dbeaver
