@@ -60,6 +60,175 @@ def test_migrations_executable_kmx_prefix():
     assert pending == ["migrations/002_evidence.sql", "migrations/003_rules.sql"]
 
 
+def test_expected_tables_from_ready_migrations():
+    tables = runtime.expected_tables(ROOT, ["migrations/001_kmx.sql"])
+    assert tables == [
+        "kmx.registry",
+        "kmx.contains",
+        "kmx.external_identifier",
+        "kmx.name_index",
+        "kmx.mapping_exception",
+    ]
+
+
+def _credential_file(tmp_path):
+    path = tmp_path / "dev-postgres.env"
+    # Assembled at runtime so the file never contains a literal credential URL.
+    url = "postgres://" + "USER:PASSWORD" + "@HOST:5432/kemirix_knowledge?sslmode=require"
+    path.write_text(f'DATABASE_URL="{url}"\n')
+    path.chmod(0o600)
+    return path
+
+
+def test_dev_database_env_absent_returns_none(tmp_path):
+    assert runtime.dev_database_env(tmp_path / "missing.env") is None
+
+
+def test_dev_database_env_symlink_rejected(tmp_path):
+    target = _credential_file(tmp_path)
+    link = tmp_path / "link.env"
+    link.symlink_to(target)
+    assert runtime.dev_database_env(link) is None
+
+
+def test_dev_database_env_unsafe_permissions_fail_closed(tmp_path):
+    path = _credential_file(tmp_path)
+    path.chmod(0o640)
+    with pytest.raises(RuntimeError):
+        runtime.dev_database_env(path)
+
+
+def test_dev_database_env_parses_url_into_pg_variables(tmp_path):
+    env = runtime.dev_database_env(_credential_file(tmp_path))
+    assert env == {
+        "PGHOST": "host",
+        "PGUSER": "USER",
+        "PGPASSWORD": "PASSWORD",
+        "PGDATABASE": "kemirix_knowledge",
+        "PGPORT": "5432",
+        "PGSSLMODE": "require",
+    }
+
+
+def test_dev_database_env_requires_postgres_url(tmp_path):
+    path = tmp_path / "dev-postgres.env"
+    path.write_text("DATABASE_URL=mysql://user:pw@host/db\n")
+    path.chmod(0o600)
+    with pytest.raises(RuntimeError):
+        runtime.dev_database_env(path)
+
+
+def test_dev_migration_execution_fails_closed_without_credentials(tmp_path, monkeypatch):
+    monkeypatch.setattr(runtime, "DEV_DB_ENV_FILE", tmp_path / "missing.env")
+    with pytest.raises(RuntimeError, match="operator-provisioned"):
+        runtime.execute_development_migrations(tmp_path)
+
+
+def _mock_database(
+    monkeypatch, *, version="170004", non_system="0", domain_schemas="0", tables="", expected=None
+):
+    calls = []
+
+    def psql(pg_env, *args, timeout=60):
+        calls.append(args)
+        if "-c" in args and "server_version_num" in args[-1]:
+            return version
+        if "-c" in args and "NOT IN ('pg_catalog','information_schema')" in args[-1]:
+            return non_system
+        if "-c" in args and "schema_name IN ('kmx','evidence','rules')" in args[-1]:
+            return domain_schemas
+        if "-c" in args and "table_schema||'.'||table_name" in args[-1]:
+            return tables
+        if any(a.startswith("--file=") for a in args):
+            return ""
+        raise AssertionError(f"unexpected psql call: {args}")
+
+    monkeypatch.setattr(runtime, "psql", psql)
+    monkeypatch.setattr(
+        runtime,
+        "dev_database_env",
+        lambda path=None: {
+            "PGHOST": "db",
+            "PGUSER": "u",
+            "PGPASSWORD": "p",
+            "PGDATABASE": "d",
+            "PGSSLMODE": "require",
+        },
+    )
+    if expected is not None:
+        monkeypatch.setattr(runtime, "expected_tables", lambda release, ready: expected)
+    return calls
+
+
+def test_dev_migration_execution_applies_from_zero(tmp_path, monkeypatch):
+    calls = _mock_database(monkeypatch)
+    monkeypatch.setattr(runtime, "ready_prefix", lambda release: ["migrations/001_kmx.sql"])
+    runtime.execute_development_migrations(tmp_path)
+    assert any(a and a[0].startswith("--single-transaction") for a in calls)
+
+
+def test_dev_migration_execution_verifies_idempotently(tmp_path, monkeypatch):
+    calls = _mock_database(
+        monkeypatch,
+        domain_schemas="1",
+        tables="kmx.contains kmx.external_identifier kmx.mapping_exception "
+        "kmx.name_index kmx.registry",
+        expected=[
+            "kmx.contains",
+            "kmx.external_identifier",
+            "kmx.mapping_exception",
+            "kmx.name_index",
+            "kmx.registry",
+        ],
+    )
+    monkeypatch.setattr(runtime, "ready_prefix", lambda release: ["migrations/001_kmx.sql"])
+    runtime.execute_development_migrations(tmp_path)
+    assert not any(a and a[0].startswith("--single-transaction") for a in calls)
+
+
+def test_dev_migration_execution_rejects_state_mismatch(tmp_path, monkeypatch):
+    _mock_database(
+        monkeypatch,
+        domain_schemas="1",
+        tables="kmx.registry",
+        expected=[
+            "kmx.contains",
+            "kmx.external_identifier",
+            "kmx.mapping_exception",
+            "kmx.name_index",
+            "kmx.registry",
+        ],
+    )
+    monkeypatch.setattr(runtime, "ready_prefix", lambda release: ["migrations/001_kmx.sql"])
+    with pytest.raises(RuntimeError, match="does not match"):
+        runtime.execute_development_migrations(tmp_path)
+
+
+def test_dev_migration_execution_rejects_non_empty_database(tmp_path, monkeypatch):
+    _mock_database(monkeypatch, non_system="2")
+    monkeypatch.setattr(runtime, "ready_prefix", lambda release: ["migrations/001_kmx.sql"])
+    with pytest.raises(RuntimeError, match="not empty"):
+        runtime.execute_development_migrations(tmp_path)
+
+
+def test_dev_migration_execution_rejects_multi_migration_upgrade(tmp_path, monkeypatch):
+    _mock_database(monkeypatch, domain_schemas="1", tables="kmx.registry")
+    monkeypatch.setattr(
+        runtime,
+        "ready_prefix",
+        lambda release: ["migrations/001_kmx.sql", "migrations/002_evidence.sql"],
+    )
+    with pytest.raises(RuntimeError, match="DATABASE-001"):
+        runtime.execute_development_migrations(tmp_path)
+
+
+def test_dev_migration_execution_requires_postgresql_17(tmp_path, monkeypatch):
+    _mock_database(monkeypatch, version="160004")
+    monkeypatch.setattr(runtime, "ready_prefix", lambda release: ["migrations/001_kmx.sql"])
+    with pytest.raises(RuntimeError, match="PostgreSQL 17"):
+        runtime.execute_development_migrations(tmp_path)
+
+
 def test_migration_cannot_hide_ddl(tmp_path):
     (tmp_path / "config").mkdir()
     (tmp_path / "migrations").mkdir()
