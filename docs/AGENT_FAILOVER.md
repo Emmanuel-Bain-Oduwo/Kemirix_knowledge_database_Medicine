@@ -1,12 +1,12 @@
 # Writer failover
 
-Frozen priority: codex -> glm -> qwen -> kimi. Nemotron remains QA. A failed API request or exhausted harness session never automatically transfers writer ownership.
+Frozen priority: codex -> glm -> minimax -> kimi. Nemotron remains QA. A failed API request or exhausted harness session never automatically transfers writer ownership.
 
 ## Engineering harness chain
 
-Codex + GPT-6 Astra is the primary engineering harness (writer `codex`). OpenCode + GLM 5.3 is the first fallback harness (writer `glm`); OpenCode + Qwen 3.8 is the second fallback harness (writer `qwen`). GLM 5.3 and Qwen 3.8 are not Codex model-brain fallback profiles: each fallback runs in the independent OpenCode harness with its own writer identity.
+Codex + GPT-6 Astra is the primary engineering harness (writer `codex`). OpenCode + GLM 5.3 is the first fallback harness (writer `glm`); OpenCode + MiniMax-M3 (Nebius) is the second fallback harness (writer `minimax`). GLM 5.3 and MiniMax-M3 are not Codex model-brain fallback profiles: each fallback runs in the independent OpenCode harness with its own writer identity.
 
-Switching from Codex to OpenCode is therefore an explicit writer handoff (codex -> glm, then glm -> qwen if the first fallback is also unavailable), never a silent model swap behind one harness. The handoff preserves the same task, branch, base/HEAD SHA, Git-backed memory, reports and deterministic coordinator state: the task keeps its recorded base SHA, the replacement writer resumes at the exact recorded checkpoint (HEAD) SHA on the task branch, and no shared state is forked or lost. See [engineering harnesses](ENGINEERING_HARNESSES.md).
+Switching from Codex to OpenCode is therefore an explicit writer handoff (codex -> glm, then glm -> minimax if the first fallback is also unavailable), never a silent model swap behind one harness. The handoff preserves the same task, branch, base/HEAD SHA, Git-backed memory, reports and deterministic coordinator state: the task keeps its recorded base SHA, the replacement writer resumes at the exact recorded checkpoint (HEAD) SHA on the task branch, and no shared state is forked or lost. See [engineering harnesses](ENGINEERING_HARNESSES.md).
 
 ## Human-approved writer handoff
 
@@ -21,4 +21,4 @@ Use this procedure for any execution-environment/writer switch, including switch
 
 A worktree already occupied by another task or a different checkpoint is rejected. The operator must archive/finish that worktree explicitly; tooling never forces checkout, deletes branches or overwrites dirty files.
 
-If the replacement writer normally performs one of the independent review roles (GLM/QWEN/KIMI), it cannot approve its own stage. A separate human review with explicit evidence is required at that stage; do not relabel the writer's output as an independent review. Other role ownership remains fixed. Clinical approval is never part of writer failover.
+If the replacement writer normally performs one of the independent review roles (GLM/MINIMAX/KIMI), it cannot approve its own stage. A separate human review with explicit evidence is required at that stage; do not relabel the writer's output as an independent review. Other role ownership remains fixed. Clinical approval is never part of writer failover.

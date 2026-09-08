@@ -7,8 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-Agent = Literal["codex", "kimi", "qwen", "glm", "nemotron"]
-PRIORITY = ["codex", "glm", "qwen", "kimi"]
+Agent = Literal["codex", "kimi", "minimax", "glm", "nemotron"]
+PRIORITY = ["codex", "glm", "minimax", "kimi"]
 STAGES = [
     "created",
     "research",
@@ -26,7 +26,7 @@ STAGES = [
 ]
 REPORTS = {
     "kimi": "kimi-analysis.md",
-    "qwen": "qwen-crosscheck.md",
+    "minimax": "minimax-crosscheck.md",
     "glm": "glm-review.md",
     "nemotron": "nemotron-qa.md",
     "codex": "final-summary.md",
@@ -65,7 +65,7 @@ def inside(path, prefix):
 
 def branch_parts(branch):
     match = re.fullmatch(
-        r"agent/(codex|kimi|qwen|glm|nemotron)/([A-Za-z0-9][A-Za-z0-9_-]{0,79})", branch
+        r"agent/(codex|kimi|minimax|glm|nemotron)/([A-Za-z0-9][A-Za-z0-9_-]{0,79})", branch
     )
     if not match:
         raise ValueError("requires agent/<agent>/<task-id> branch; main refused")
@@ -80,7 +80,7 @@ class Task(BaseModel):
     goal: str = Field(min_length=10)
     production_writer: Agent
     researcher: Agent = "kimi"
-    cross_checker: Agent = "qwen"
+    cross_checker: Agent = "minimax"
     reviewer: Agent = "glm"
     validator: Agent = "nemotron"
     active_writer: Agent
@@ -124,7 +124,7 @@ class Task(BaseModel):
     def contract(self):
         if (self.researcher, self.cross_checker, self.reviewer, self.validator) != (
             "kimi",
-            "qwen",
+            "minimax",
             "glm",
             "nemotron",
         ):

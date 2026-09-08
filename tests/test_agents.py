@@ -23,7 +23,14 @@ from agents.harness import (
 from agents.memory import CANONICAL, writer_lock
 from agents.merge_gate import evaluate
 from agents.models import PRIORITY, REPORTS, Task, branch_parts
-from agents.providers import CloudflareProvider, NebiusProvider, ProviderError, SmokeResult
+from agents.providers import (
+    MODELS,
+    CloudflareProvider,
+    NebiusProvider,
+    ProviderError,
+    SmokeResult,
+    provider_for,
+)
 from agents.research import ResearchError, ResearchGateway
 from agents.security import ensure_no_secrets, redact
 from agents.tasks import (
@@ -108,7 +115,7 @@ def test_writer_and_reviewer_permissions(task):
     task.authorize("codex", "tests/fixtures/engineering.txt")
     for role, filename in [
         ("kimi", "kimi-analysis.md"),
-        ("qwen", "qwen-crosscheck.md"),
+        ("minimax", "minimax-crosscheck.md"),
         ("glm", "glm-review.md"),
         ("nemotron", "nemotron-qa.md"),
     ]:
@@ -238,7 +245,7 @@ def test_review_blocks_and_fixes_repeat_review(control):
     transition(control, "TEST-001", "crosscheck", "implementation fixture ready")
     with pytest.raises(FileNotFoundError):
         transition(control, "TEST-001", "review", "missing review")
-    report = control / "ops/reports/TEST-001/qwen-crosscheck.md"
+    report = control / "ops/reports/TEST-001/minimax-crosscheck.md"
     report.parent.mkdir(parents=True)
     report.write_text("REQUEST_CHANGES\nFindings: fix fixture.\nChecks: fixture mismatch.\n")
     with pytest.raises(ValueError):
@@ -392,6 +399,22 @@ def test_smoke_rejects_malformed_structures(body):
 def test_missing_configuration():
     with pytest.raises(ProviderError, match="missing_configuration"):
         NebiusProvider(env={}).smoke("kimi")
+
+
+def test_provider_role_mapping():
+    # The minimax seat runs MiniMax-M3 on Nebius;
+    # Cloudflare now serves only the glm role.
+    assert MODELS["minimax"] == ("nebius", "MINIMAX_MODEL", "MiniMaxAI/MiniMax-M3")
+    assert isinstance(provider_for("kimi"), NebiusProvider)
+    assert isinstance(provider_for("nemotron"), NebiusProvider)
+    assert isinstance(provider_for("minimax"), NebiusProvider)
+    assert isinstance(provider_for("glm"), CloudflareProvider)
+    with pytest.raises(ProviderError, match="invalid_role"):
+        CloudflareProvider(
+            env={"CLOUDFLARE_ACCOUNT_ID": "a" * 32, "CLOUDFLARE_API_TOKEN": "synthetic"}
+        ).complete("minimax", "synthetic")
+    with pytest.raises(ProviderError, match="invalid_role"):
+        NebiusProvider(env={"NEBIUS_API_KEY": "synthetic"}).complete("glm", "synthetic")
 
 
 def resolver(address):
@@ -657,7 +680,7 @@ def update_task(control, **changes):
 def merge_gate_reports(control, research=True, head_sha=SHA):
     reports = control / "ops/reports/TEST-001"
     reports.mkdir(parents=True, exist_ok=True)
-    (reports / "qwen-crosscheck.md").write_text("PASS\nFindings: none.\nChecks: fixture.\n")
+    (reports / "minimax-crosscheck.md").write_text("PASS\nFindings: none.\nChecks: fixture.\n")
     (reports / "glm-review.md").write_text(
         "PASS\nFindings: none.\nSeverity: MINOR\nChecks: fixture.\n"
     )
@@ -688,7 +711,7 @@ def test_merge_gate_fails_closed_without_reports_ci_or_tests(control, monkeypatc
         main_head=SHA,
     )
     assert report["result"] == "NOT_READY"
-    for failed in ["report_qwen", "report_glm", "report_nemotron", "ci_pass", "required_tests"]:
+    for failed in ["report_minimax", "report_glm", "report_nemotron", "ci_pass", "required_tests"]:
         assert failed in report["failed"]
 
 
@@ -813,19 +836,19 @@ def test_research_required_only_when_relevant(control):
 
 def test_harness_chain_matches_frozen_writer_priority():
     # Codex + GPT-6 Astra primary; OpenCode + GLM 5.3 first fallback;
-    # OpenCode + Qwen 3.8 second fallback. The fallback order must match the
-    # frozen writer priority prefix (codex -> glm -> qwen).
+    # OpenCode + MiniMax-M3 second fallback. The fallback order must match the
+    # frozen writer priority prefix (codex -> glm -> minimax).
     assert [p.name for p in fallback_chain()] == [
         "codex-gpt-6-astra",
         "opencode-glm-5.3",
-        "opencode-qwen-3.8-27b",
+        "opencode-minimax-m3",
     ]
     assert [p.harness for p in fallback_chain()] == ["codex", "opencode", "opencode"]
     assert [p.writer for p in fallback_chain()] == PRIORITY[:3]
 
 
 def test_harness_switch_is_explicit_writer_handoff():
-    # GLM/Qwen are independent OpenCode harnesses, not Codex model brains:
+    # GLM/MiniMax are independent OpenCode harnesses, not Codex model brains:
     # every step down the chain changes the writer identity and therefore
     # requires the human-approved writer handoff.
     chain = fallback_chain()
@@ -840,7 +863,7 @@ def test_harness_switch_is_explicit_writer_handoff():
     [
         ("codex-gpt-6-astra", "codex"),
         ("opencode-glm-5.3", "glm"),
-        ("opencode-qwen-3.8-27b", "qwen"),
+        ("opencode-minimax-m3", "minimax"),
     ],
 )
 def test_harness_writer_identity(name, writer):
@@ -1197,7 +1220,7 @@ def test_merge_gate_foundation_task_fails_closed_without_reports(foundation_cont
         main_head=SHA,
     )
     assert report["result"] == "NOT_READY"
-    assert "report_qwen" in report["failed"]
+    assert "report_minimax" in report["failed"]
     assert "no_unresolved_blockers" in report["failed"]
 
 
@@ -1209,7 +1232,7 @@ def test_context_keeps_invariants_forbidden_for_foundation(foundation_control):
     assert "ops/memory" not in forbidden
 
 
-@pytest.mark.parametrize("role", ["qwen", "glm", "nemotron", "kimi"])
+@pytest.mark.parametrize("role", ["minimax", "glm", "nemotron", "kimi"])
 @pytest.mark.parametrize(
     "defect",
     [
@@ -1401,7 +1424,7 @@ def test_merge_gate_cli_exit_status(control, monkeypatch, capsys, defect):
     if defect != "test":
         args += ["--test-result", "foundation"]
     if defect == "report":
-        (control / "ops/reports/TEST-001/qwen-crosscheck.md").unlink()
+        (control / "ops/reports/TEST-001/minimax-crosscheck.md").unlink()
     if defect == "lifecycle":
         update_task(control, status="fixes")
     if defect is None:
@@ -1471,9 +1494,9 @@ def test_github_agent_gate_publication(control, monkeypatch, defect):
     }
     checks = {"total_count": 1, "check_runs": [run]}
     if defect == "no_report":
-        (control / "ops/reports/TEST-001/qwen-crosscheck.md").unlink()
+        (control / "ops/reports/TEST-001/minimax-crosscheck.md").unlink()
     if defect in {"wrong_report", "stale_report"}:
-        path = control / "ops/reports/TEST-001/qwen-crosscheck.md"
+        path = control / "ops/reports/TEST-001/minimax-crosscheck.md"
         path.write_text(
             path.read_text().replace("PASS", "REQUEST_CHANGES")
             if defect == "wrong_report"

@@ -79,7 +79,7 @@ The tool accepts task branches only, reuses an existing open PR when present,
 otherwise creates a draft PR into main. It never targets develop, bypasses CI or
 leaks secrets.
 
-Ordinary engineering PRs require: GitHub CI = PASS, Qwen = PASS, GLM = PASS,
+Ordinary engineering PRs require: GitHub CI = PASS, MiniMax = PASS, GLM = PASS,
 Nemotron = QA_PASS, required tests = PASS, a valid task contract and no unresolved
 blocking findings. Kimi research is required only where the task contract declares
 `research_required: true`; unrelated infrastructure tasks do not force it. Review

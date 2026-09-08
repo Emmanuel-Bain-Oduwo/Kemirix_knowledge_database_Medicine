@@ -4,14 +4,14 @@ phase: phase_0
 goal: Finalize and externally verify the Kemirix Phase 0 engineering foundation.
 production_writer: codex
 researcher: kimi
-cross_checker: qwen
+cross_checker: minimax
 reviewer: glm
 validator: nemotron
 active_writer: codex
 writer_priority:
 - codex
 - glm
-- qwen
+- minimax
 - kimi
 allowed_paths:
 - .github/workflows/ci.yml
@@ -67,7 +67,7 @@ acceptance_criteria:
 - Pull requests target main and fail closed on required gates.
 - Development deployment uses the exact approved main SHA.
 - Git-backed project memory survives engineering harness handoff.
-- Codex plus GPT-6 Astra is primary and OpenCode plus GLM/Qwen are fallback harnesses.
+- Codex plus GPT-6 Astra is primary and OpenCode plus GLM/MiniMax are fallback harnesses.
 - KMX, Evidence, Rules and clinical migrations remain untouched.
 - Foundation tests, Ruff, configuration validation and secret scan pass.
 required_tests:

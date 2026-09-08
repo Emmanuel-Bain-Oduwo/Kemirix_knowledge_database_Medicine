@@ -12,9 +12,9 @@ import httpx
 
 MODELS = {
     "kimi": ("nebius", "KIMI_MODEL", "moonshotai/Kimi-K3"),
-    "nemotron": ("nebius", "NEMOTRON_MODEL", "nvidia/nemotron-3-ultra-550b-a55b"),
+    "nemotron": ("nebius", "NEMOTRON_MODEL", "nvidia/Nemotron-3-Ultra-550b-a55b"),
     "glm": ("cloudflare", "GLM_MODEL", "@cf/zai-org/glm-5.3"),
-    "qwen": ("cloudflare", "QWEN_MODEL", "@cf/qwen/qwen3.8-27b"),
+    "minimax": ("nebius", "MINIMAX_MODEL", "MiniMaxAI/MiniMax-M3"),
 }
 SMOKE_PROMPT = 'Return only this minimal JSON object confirming connectivity: {"connectivity":"ok"}'
 
@@ -162,7 +162,7 @@ class NebiusProvider(HTTPProvider):
         from .security import ensure_no_secrets
 
         ensure_no_secrets(prompt)
-        if role not in ["kimi", "nemotron"]:
+        if role not in ["kimi", "nemotron", "minimax"]:
             raise ProviderError("invalid_role")
         # Operators may select either official endpoint; never forward keys to arbitrary hosts.
         base = self.env.get("NEBIUS_BASE_URL", "https://api.tokenfactory.nebius.com/v1").rstrip("/")
@@ -198,7 +198,7 @@ class CloudflareProvider(HTTPProvider):
         from .security import ensure_no_secrets
 
         ensure_no_secrets(prompt)
-        if role not in ["glm", "qwen"]:
+        if role not in ["glm"]:
             raise ProviderError("invalid_role")
         account = self.required("CLOUDFLARE_ACCOUNT_ID")
         if not re.fullmatch("[0-9a-fA-F]{32}", account):

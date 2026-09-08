@@ -5,14 +5,14 @@ goal: Validate a harmless engineering-only text fixture through the five-agent r
   lifecycle.
 production_writer: codex
 researcher: kimi
-cross_checker: qwen
+cross_checker: minimax
 reviewer: glm
 validator: nemotron
 active_writer: codex
 writer_priority:
 - codex
 - glm
-- qwen
+- minimax
 - kimi
 allowed_paths:
 - tests/fixtures/foundation-dryrun.txt

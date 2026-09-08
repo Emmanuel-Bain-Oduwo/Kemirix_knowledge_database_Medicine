@@ -1,13 +1,14 @@
 """Engineering harness chain. Switching harnesses is an explicit writer handoff.
 
 Codex + GPT-6 Astra is the primary engineering harness. OpenCode + GLM 5.3 is the
-first fallback harness; OpenCode + Qwen 3.8 is the second fallback harness. GLM
-5.3 and Qwen 3.8 are not Codex model-brain fallback profiles: every harness has
-its own writer identity, so switching from Codex to OpenCode is a human-approved
-writer handoff that preserves the same task, branch, base/HEAD SHA, Git-backed
-memory, reports and deterministic coordinator state (see agents.tasks.handoff
-and docs/AGENT_FAILOVER.md). Profiles carry no secret values; credentials stay
-VM-side (/etc/kemirix/agents.env) or in each harness's own authentication.
+first fallback harness; OpenCode + MiniMax-M3 (Nebius) is the second fallback
+harness under writer minimax. GLM 5.3 and MiniMax-M3 are not Codex model-brain
+fallback profiles: every harness has its own writer identity, so switching from
+Codex to OpenCode is a human-approved writer handoff that preserves the same
+task, branch, base/HEAD SHA, Git-backed memory, reports and deterministic
+coordinator state (see agents.tasks.handoff and docs/AGENT_FAILOVER.md).
+Profiles carry no secret values; credentials stay VM-side
+(/etc/kemirix/agents.env) or in each harness's own authentication.
 """
 
 import os
@@ -33,8 +34,8 @@ REGISTRY: dict[str, HarnessProfile] = {
         HarnessProfile("codex-gpt-6-astra", "codex", "gpt-6-astra", "codex", 0),
         # First fallback harness: OpenCode running GLM 5.3 via Cloudflare.
         HarnessProfile("opencode-glm-5.3", "opencode", "@cf/zai-org/glm-5.3", "glm", 1),
-        # Second fallback harness: OpenCode running Qwen 3.8 via Cloudflare.
-        HarnessProfile("opencode-qwen-3.8-27b", "opencode", "@cf/qwen/qwen3.8-27b", "qwen", 2),
+        # Second fallback harness: OpenCode running MiniMax-M3 via Nebius (writer minimax).
+        HarnessProfile("opencode-minimax-m3", "opencode", "MiniMaxAI/MiniMax-M3", "minimax", 2),
     ]
 }
 
