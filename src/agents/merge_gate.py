@@ -3,7 +3,7 @@
 import re
 
 from .gitops import git
-from .models import PRIORITY, REPORTS, STAGES, branch_parts
+from .models import PRIORITY, REPORTS, branch_parts
 from .security import safe_repo_path
 from .tasks import load_task, validate_report
 
@@ -20,10 +20,21 @@ def is_ancestor(root, ancestor, descendant):
     return True
 
 
-def report_result(root, task_id, role):
+def report_result(root, task_id, role, head_sha):
     try:
         path = safe_repo_path(root, f"ops/reports/{task_id}/{REPORTS[role]}")
-        return validate_report(path.read_text(), role)
+        text = path.read_text()
+        # Exactly one binding per field; copied or ambiguous reports fail closed.
+        for key, expected in (("Task-ID", task_id), ("Head-SHA", head_sha), ("Role", role)):
+            values = re.findall(rf"^{key}: *(.*)$", text, re.MULTILINE)
+            if values != [expected]:
+                return None
+        evidence_key = "References" if role == "kimi" else "Checks"
+        if not all(
+            re.search(rf"^{key}: \S.*$", text, re.MULTILINE) for key in ("Findings", evidence_key)
+        ):
+            return None
+        return validate_report(text, role)
     except Exception:
         return None
 
@@ -59,16 +70,19 @@ def evaluate(
     checks["head_checkpoint"] = re.fullmatch("[0-9a-f]{40}", head_sha or "") is not None and (
         head_sha == task.commit_sha
     )
+    checks["head_on_base"] = is_ancestor(root, task.base_sha, head_sha or "")
     for role, expected in REQUIRED_RESULTS.items():
-        checks[f"report_{role}"] = report_result(root, task_id, role) == expected
+        checks[f"report_{role}"] = report_result(root, task_id, role, head_sha) == expected
     if task.research_required:
-        checks["report_kimi"] = report_result(root, task_id, "kimi") == "ANALYSIS_COMPLETE"
+        checks["report_kimi"] = (
+            report_result(root, task_id, "kimi", head_sha) == "ANALYSIS_COMPLETE"
+        )
     checks["required_tests"] = all(
         test_results.get(profile) is True for profile in task.required_tests
     )
     checks["ci_pass"] = ci_pass is True
     # Unresolved blockers: the task must have cleared the independent QA loop.
-    checks["no_unresolved_blockers"] = STAGES.index(task.status) >= STAGES.index("ci")
+    checks["no_unresolved_blockers"] = task.status in {"ci", "awaiting_human"}
 
     failed = [name for name, passed in checks.items() if not passed]
     return {

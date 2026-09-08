@@ -44,3 +44,31 @@ uv run python -m agents.coordinator merge-gate TASK-001 \
 ```
 
 The five-agent harmless rehearsal is prepared in ops/tasks/FOUNDATION-DRYRUN-001.yaml. Follow its report-directory README. No provider was invoked to create it, and no review result is implied.
+
+## Exact-checkpoint merge gate
+
+Gate reports must contain exactly one `Task-ID: <task-id>` line and exactly one
+`Head-SHA: <40-character-reviewed-checkpoint>` line and `Role: <role>` line,
+in addition to the status, nonempty `Findings:` and `Checks:` evidence
+(`References:` for Kimi). Missing, duplicate, wrong-task and stale-SHA
+bindings fail closed. These are reviewer-owned reports in the control checkout;
+do not manufacture PASS files or embed a commit's own SHA into that commit.
+Refresh independent reports after changing the reviewed checkpoint.
+
+Readiness requires the supplied head to match the task checkpoint and descend
+from its recorded base, with that base on fetched main. Only `ci` and
+`awaiting_human` are merge-eligible; implementation, fixes, unfinished review and
+already merged/deployed/closed states cannot authorize another merge. All required
+test profiles and CI must be explicitly true. The CLI exits nonzero on NOT_READY
+or unverifiable setup. Its CI/test flags are exact-checkpoint operator attestations,
+not independent hosted verification; `foundation` remains the ordinary CI check.
+
+Use `python -m agents.publish_gate` from a trusted operator session to publish
+`kemirix-agent-gate` for GitHub merge readiness (see [CI/CD](CI_CD.md)). It reads
+the canonical task/reports, verifies live PR and foundation CI identity, executes
+required safe tests against a clean exact PR checkout, and publishes success only
+after MERGE_READY and final identity/CI rechecks. It accepts no CI/test PASS flags.
+The owner configures both required checks after this checkpoint. Publishing must
+wait for real independent review; a local synthetic test PASS is not a provider
+report. The publisher is implemented here but is not externally invoked by this
+closeout task.

@@ -1,0 +1,78 @@
+schema_version: 2
+task_id: FOUNDATION-CLOSEOUT-001
+phase: phase_0
+goal: 'Complete the Kemirix engineering foundation by wiring the existing deterministic
+  agent merge gate into GitHub merge readiness, updating engineering documentation
+  and Git-backed memory to current reality, and preparing the repository for the final
+  five-agent rehearsal.
+
+  '
+production_writer: codex
+researcher: kimi
+cross_checker: qwen
+reviewer: glm
+validator: nemotron
+active_writer: codex
+writer_priority:
+- codex
+- glm
+- qwen
+- kimi
+allowed_paths:
+- src/agents
+- scripts
+- tests
+- .github/workflows
+- docs/CI_CD.md
+- docs/AGENT_COORDINATION.md
+- docs/DEVELOPMENT_WORKFLOW.md
+- ops/memory/CURRENT_STATE.md
+- ops/memory/PHASE_STATUS.yaml
+- ops/memory/KNOWN_ISSUES.md
+- ops/tasks/FOUNDATION-CLOSEOUT-001.yaml
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+base_sha: 7882b81cdb0d16653ee3b6c43eca4d893f793526
+branch: agent/codex/FOUNDATION-CLOSEOUT-001
+research_required: false
+acceptance_criteria:
+- Existing deterministic merge-gate logic remains fail-closed.
+- GitHub receives a kemirix-agent-gate success state only when the deterministic merge
+  gate returns MERGE_READY.
+- Missing or failing Qwen, GLM, Nemotron, required Kimi, test, CI, task, branch, base,
+  or checkpoint conditions cannot produce a successful agent gate.
+- Routine GitHub auto-merge cannot bypass the required Kemirix engineering gate once
+  repository protection is configured.
+- Existing foundation CI and deployment behavior remains functional.
+- CURRENT_STATE, PHASE_STATUS, and KNOWN_ISSUES accurately describe the engineering
+  state after the automation rehearsal already completed.
+- No KMX, Evidence, Rules, source-ingestion, or clinical domain code is introduced
+  in this task.
+- Relevant automated tests cover the new gate publication behavior.
+required_tests:
+- foundation
+status: implementation
+created_at: '2026-09-08T04:29:32.272021Z'
+updated_at: '2026-09-08T04:29:32.572465Z'
+completed_at: null
+commit_sha: null
+deployed_sha: null
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: Engineering closeout uses existing repository architecture; external research
+    is not required.
+  human_approved: false
+  timestamp: '2026-09-08T04:29:32.422618+00:00'
+- from: research
+  to: implementation
+  evidence: Closeout scope is frozen and ready for implementation.
+  human_approved: false
+  timestamp: '2026-09-08T04:29:32.572470+00:00'
