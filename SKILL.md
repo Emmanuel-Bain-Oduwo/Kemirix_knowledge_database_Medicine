@@ -1,11 +1,11 @@
 ---
 name: kemirix-knowledge-foundation
-version: 4.3
-updated: 2026-09-07
+version: 5.0
+updated: 2026-09-08
 description: Agent operating skill for the Kemirix medication knowledge foundation: KMX-ING/KMX-CD/KMX-PROD -> full source-specific Clinical Evidence -> deterministic Evidence-linked Rules on OVH infrastructure.
 ---
 
-# Kemirix Knowledge Foundation - Final Agent SKILL
+# Kemirix Knowledge Foundation - Final Agent SKILL v5.0
 
 ## 0. Mission and frozen scope
 
@@ -67,6 +67,56 @@ source_version_policy: pinned
 rights_status: cleared | pending_review | restricted
 rate_limit_policy: source-specific
 ```
+## 0A. Engineering authority and agent roles
+
+Engineering review is separate from clinical approval. The active engineering chain is:
+
+```text
+Kimi K3 (Nebius)
+  research / source-data analysis when required
+        |
+        v
+Codex + GPT-6 Astra
+  primary implementation writer
+        |
+        v
+MiniMax-M3 (Nebius)
+  independent cross-check
+        |
+        v
+GLM 5.3 (Cloudflare / OpenCode)
+  architecture and code review; first writer fallback when Codex is unavailable
+        |
+        v
+Nemotron 3 Ultra (Nebius)
+  adversarial QA
+        |
+        v
+foundation CI + deterministic merge gate + kemirix-agent-gate
+```
+
+Frozen active role names and reports:
+
+| Role | Responsibility | Durable report |
+|---|---|---|
+| `codex` | primary writer | `final-summary.md` |
+| `kimi` | research/data analysis | `kimi-analysis.md` |
+| `minimax` | independent cross-check; second writer fallback | `minimax-crosscheck.md` |
+| `glm` | architecture/code review; first writer fallback | `glm-review.md` |
+| `nemotron` | adversarial QA | `nemotron-qa.md` |
+
+Writer priority is `codex -> glm -> minimax -> kimi`; only one production writer owns a task at a time. A model report never grants clinical approval.
+
+Durable engineering authority order:
+
+```text
+live GitHub code/config/task state
+  -> SKILL.md / INVARIANTS.md / DECISIONS.md
+  -> CURRENT_STATE.md / PHASE_STATUS.yaml / KNOWN_ISSUES.md
+  -> task contract + exact checkpoint + independent reports
+  -> chat history only as context
+```
+
 ## 1. Non-negotiable invariants
 1. Identity is solved before clinical content is normalized.
 2. KMX levels in this build are only ING, CD and PROD.
@@ -83,6 +133,13 @@ rate_limit_policy: source-specific
 13. Never commit secrets, API keys or live access credentials to GitHub.
 14. Every raw source snapshot must be versioned and hash-addressable.
 15. Ambiguous identity, ambiguous PDF/table extraction and high-stakes Rule activation require human review.
+16. `join_level` and `truth_level` are always stored separately.
+17. `evidence.evidence_support` links one Clinical Evidence package to its exact supporting source blocks; it does not blend multiple source packages.
+18. Multi-Evidence support for one Rule belongs in `rules.rule_evidence`.
+19. KMX migration 001 must not depend on Evidence tables created by migration 002; mapping exceptions keep plain source provenance fields.
+20. The catalogue size is data-driven. Never hardcode an old medicine count such as 696 into this repository.
+21. FRDB supplier/vendor sourcing data is outside the clinical knowledge scope and must not be ingested.
+22. Engineering merge approval and human clinical approval are separate authorities.
 
 ## 2. KMX identity baseline
 
@@ -367,6 +424,18 @@ KMX
 ```
 
 Never merge the source text of A/B/C into one unattributed clinical paragraph.
+
+Relational support contract:
+
+```text
+evidence.evidence_support
+  evidence_id
+  block_id
+  support_role
+  ordinal
+```
+
+A single Evidence package may cite several blocks from the same source version. Separate sources remain separate Evidence packages. If one Rule relies on several approved Evidence packages, `rules.rule_evidence` records those links.
 
 ## 6. Source blocks
 
@@ -853,6 +922,46 @@ The **Rule always inherits the Evidence truth KMX**, never the original mechanic
 
 
 
+## 7B.1 Exact implementation registry - source IDs
+
+The active implementation registry uses these stable source slugs. These names are code/config/database identifiers, while the S01-S27 lane IDs remain the architectural ordering.
+
+| Lane | source_id | Approved source | Primary role |
+|---|---|---|---|
+| S01 | `rxnorm_athena` | RxNorm / Athena baseline | ING/CD identity foundation |
+| S02 | `athena_extension` | Athena extension / vocabulary mappings | identity/classification |
+| S03 | `gsrs_unii` | GSRS / UNII | substance identity |
+| S04 | `chebi_unichem` | ChEBI + UniChem | chemical identity bridge |
+| S05 | `medrt` | MED-RT | terminology/classification support |
+| S06 | `dailymed` | DailyMed | primary US regulatory Evidence |
+| S07 | `openfda_label` | openFDA Drug Label | duplicate structured label projection |
+| S08 | `ppb_register` | Kenya PPB Product Register | Kenya product identity |
+| S09 | `ppb_smpc` | Kenya PPB professional product information / SmPC | primary regulatory Evidence |
+| S10 | `keml` | Kenya Essential Medicines List | catalogue |
+| S11 | `knmf` | Kenya National Medicines Formulary | primary only after official file/rights approval |
+| S12 | `kenya_moh` | Kenya Ministry of Health clinical guidelines | primary guideline Evidence |
+| S13 | `who` | WHO EML / AWaRe / actionable guidance | mixed catalogue/classification/guidance |
+| S14 | `kdigo` | KDIGO | renal guideline Evidence |
+| S15 | `cpic_clinpgx` | CPIC + ClinPGx | pharmacogenomic guideline Evidence |
+| S16 | `inxight` | NCATS Inxight FRDB | supporting PK/safety Evidence |
+| S17 | `drugcentral` | DrugCentral | supporting medication knowledge |
+| S18 | `onsides` | OnSIDES | supporting adverse-effect Evidence |
+| S19 | `civic` | CIViC | supporting oncology/genomic Evidence |
+| S20 | `chembl` | ChEMBL | supporting bioactivity/target data |
+| S21 | `gtopdb` | IUPHAR/BPS Guide to Pharmacology | supporting pharmacology |
+| S22 | `dgidb` | DGIdb | supporting drug-gene interactions |
+| S23 | `open_targets` | Open Targets | supporting target-disease Evidence |
+| S24 | `drugmechdb` | DrugMechDB | supporting mechanism paths |
+| S25 | `ciel_ocl` | CIEL / OCL | clinical terminology / EMR normalization |
+| S26 | `ema` | European Medicines Agency | EU product identity + primary regulatory Evidence |
+| S27 | `mhra` | UK MHRA | UK product identity + primary regulatory Evidence |
+
+Current release notes that must not be hardcoded forever:
+- ChEMBL: resolve the current approved release dynamically; ChEMBL 37 is the current 2026 release in this documentation baseline.
+- OnSIDES: distinguish code releases from data releases; the most recent verified data release in the execution book is v3.1.1.
+- Inxight FRDB: use the approved clinical/research release and explicitly exclude supplier/vendor sourcing data.
+- KNMF: keep production clinical authority disabled until an exact official/approved copy and rights status are pinned.
+
 ## 7C. Worked examples of Evidence and Rules at ING, CD and PROD
 
 ### Example 1 - ING Evidence
@@ -1062,7 +1171,7 @@ One raw bucket is enough:
 
 ```text
 kemirix-knowledge-raw/
-  Sxx/
+  <source_id>/
     <source_version_or_snapshot>/
       <source_record_key>/
         original/
@@ -1070,25 +1179,59 @@ kemirix-knowledge-raw/
         manifest.json
 ```
 
-`manifest.json` minimum:
+`lane_id` and `source_id` are deliberately separate:
+
+```text
+lane_id   = permanent Kemirix architecture lane, e.g. S06
+source_id = stable implementation/database slug, e.g. dailymed
+```
+
+Do not duplicate both values in every object key. Keep `source_id` in the path and preserve `lane_id` inside the manifest.
+
+`manifest.json` minimum contract:
 
 ```json
 {
-  "source_id": "Sxx",
+  "schema_version": 1,
+  "lane_id": "S06",
+  "source_id": "dailymed",
   "source_version": "...",
   "source_record_key": "...",
   "acquisition_mode": "api|bulk|db|pdf|web|manual",
   "fetched_at": "...",
   "upstream_published_at": "...",
-  "object_key": "...",
-  "sha256": "...",
-  "adapter_version": "<git sha>",
+  "adapter_git_sha": "<git sha>",
   "rights_status": "cleared|pending_review|restricted",
-  "parse_status": "staged|parsed|quarantined"
+  "parse_status": "staged|parsed|quarantined",
+  "artifacts": [
+    {
+      "artifact_type": "original",
+      "original_filename": "...",
+      "content_type": "...",
+      "byte_size": 0,
+      "object_key": "...",
+      "sha256": "..."
+    }
+  ]
 }
 ```
 
-Object Storage is **not** the clinical authority. It is the immutable evidence vault for source originals.
+Never store credentials, bearer tokens, database passwords or presigned URLs in the manifest.
+
+Immutable upload rule:
+
+```text
+download to temporary file
+  -> calculate SHA-256
+  -> build deterministic object key
+  -> HEAD object
+       absent      -> upload
+       same hash   -> idempotent success
+       other hash  -> reject / quarantine
+  -> upload manifest last
+```
+
+Object Storage is not the clinical authority. It is the immutable evidence vault for source originals.
 
 ## 11. OVH Managed PostgreSQL
 
@@ -1120,7 +1263,7 @@ No graph DB is required for this deterministic foundation.
 
 ### 11.1 What belongs in PostgreSQL
 
-- stable KMX identity and parent/child containment
+- stable KMX identity and container/member containment
 - external identifier crosswalks
 - source/version registry
 - source-block metadata and raw-object pointers
@@ -1505,6 +1648,22 @@ Show the Evidence packages supporting one Rule.
 Show all unresolved mapping exceptions.
 Show source coverage gaps by KMX/category.
 ```
+
+## 21A. Deliberate simplicity / anti-overengineering rule
+
+Do not add infrastructure because it sounds enterprise. Add it only when the current deterministic pipeline proves a real need. The foundation intentionally uses:
+
+```text
+Python
+PostgreSQL
+S3-compatible Object Storage
+one execution VM
+GitHub Actions
+source-specific adapters
+DBeaver for QA
+```
+
+Do not introduce a graph database, Airflow, Kafka, Celery, Kubernetes, LangChain, per-source rule engines, or a microservice split unless a concrete measured requirement cannot be met by the existing architecture.
 
 ## 22. Final frozen architecture
 
