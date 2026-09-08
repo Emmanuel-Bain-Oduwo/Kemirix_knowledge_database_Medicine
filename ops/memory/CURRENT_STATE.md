@@ -1,21 +1,24 @@
 # Current state
 
-FOUNDATION-QWEN-MINIMAX-SWAP-001 is completing the owner-directed cross-checker
-rename: the second-fallback-writer role is renamed to minimax
-and executes MiniMax-M3 (MiniMaxAI/MiniMax-M3) through the Nebius endpoint, with
-Cloudflare serving only the glm role. FOUNDATION-CLOSEOUT-001 (#3) merged through the
-automatic path at main checkpoint 94d6c59 and its exact SHA is deployed and verified
-on development.
+Phase 0 (engineering foundation) is complete. FOUNDATION-QWEN-MINIMAX-SWAP-001 (#4)
+closed the owner-directed cross-checker rename at main checkpoint
+bdfd2ebae9bc01c973e0077a1b2992d792937325: the role is minimax executing MiniMax-M3
+(MiniMaxAI/MiniMax-M3) through the Nebius endpoint, Cloudflare serves only the glm
+role, the corrected Nemotron default model id is nvidia/Nemotron-3-Ultra-550b-a55b,
+and qwen naming is eliminated from the active engineering system (historical
+audit trail preserved per D019). The task is closed with commit_sha and
+deployed_sha bdfd2eb.
 
 ## Proven delivery execution
 
-PR creation, automatic squash merge, main CI and exact-SHA development deployment
-executed successfully: the automation rehearsal (#2) and the closeout (#3, main
-checkpoint 94d6c59; runtime verification PASS). The closeout's full external review
-chain also executed against real providers (MiniMax cross-check, GLM review, Nemotron
-adversarial QA) before its deterministic gate published `kemirix-agent-gate` success.
-These results prove the delivery path and the reviewed closeout; they do not by
-themselves establish current repository protection settings.
+The full automatic path is proven end-to-end on main: five-agent review chain
+(codex writer, minimax cross-check via real Nebius MiniMax-M3, GLM review,
+Nemotron adversarial QA via real Nebius Nemotron 3 Ultra) -> deterministic merge
+gate MERGE_READY (all 13 checks) -> `kemirix-agent-gate` SUCCESS on the exact PR
+head -> squash merge into main -> main CI SUCCESS -> Deploy development
+workflow deployed the exact CI-tested SHA to the OVH development environment
+(DEPLOYED_SHA = merge SHA; bdfd2eb for the swap, 94d6c59 for the closeout, both
+runtime-verified). The automation rehearsal (#2) previously proved the same path.
 
 ## Implemented and locally validated
 
@@ -31,28 +34,24 @@ correct branch/base/head and ancestry, all required tests, CI and an eligible
 lifecycle state. Missing or unverifiable conditions cannot produce MERGE_READY.
 The local coordinator consumes operator CI/test attestations. The separate
 `agents.publish_gate` command verifies live PR/CI identity, executes required safe
-tests and publishes `kemirix-agent-gate` only after MERGE_READY; it has now been
-executed externally (PR #3, exact head db709d7). Local synthetic regression tests are
-not external provider PASS reports.
-
-The minimax role rename covers the Agent literal, frozen writer priority
-(codex -> glm -> minimax -> kimi), report filename minimax-crosscheck.md, merge-gate
-and transition role gates, branch patterns, the MINIMAX_MODEL environment variable,
-the role document, task contracts, tests and documentation; historical decision
-entries, reports and git history keep their original wording as an immutable audit
-trail (D019). Provider smoke and the full suite pass with the renamed role.
+tests and publishes `kemirix-agent-gate` only after MERGE_READY; executed
+externally on PR #3 (db709d7) and PR #4 (8753c1d). Local synthetic regression
+tests are not external provider PASS reports.
 
 ## Pending
 
 - Owner-side main protection, required-check configuration (foundation +
-  kemirix-agent-gate) and automatic head-branch deletion remain owner-side GitHub
-  configuration. Successful automatic merges do not establish those settings.
-- Full five-agent worktree/access separation and DBeaver verification remain
-  unverified; the active Codex task worktree exists.
-- Phase 1 readiness remains blocked pending owner review of the completed foundation.
+  kemirix-agent-gate), GitHub auto-merge enablement and automatic head-branch
+  deletion remain owner-side GitHub configuration. Successful gated merges do
+  not establish those settings.
+- DBeaver verification remains unverified; full five-agent worktree/access
+  separation is not yet applied (single control VM, one active writer worktree).
+- Codex CLI login smoke remains pending (structural validation only).
 
-## Domain scope
+## Phase 1
 
-Migrations remain three non-executable placeholders. KMX, Clinical Evidence, Rules
-and S01–S27 integrations remain not started. No domain implementation, clinical
-approval or production deployment is claimed.
+Production database/domain implementation has started: KMX-SCHEMA-001 is the
+active phase_1 task (executable kmx schema DDL first). Until it lands, domain
+modules (src/kmx, src/evidence, src/rules, src/sources) and the three migrations
+remain non-executable placeholders. No clinical approval or production domain
+deployment is claimed.

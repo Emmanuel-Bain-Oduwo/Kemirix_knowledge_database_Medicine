@@ -1,39 +1,39 @@
-engineering_foundation: closeout_ready_for_checkpoint
+engineering_foundation: complete # Proven end-to-end through FOUNDATION-CLOSEOUT-001 and FOUNDATION-QWEN-MINIMAX-SWAP-001.
 infrastructure_vm: pass # Operator-reported baseline, not re-tested here.
 github: pass # Operator-reported repository availability, not ruleset verification.
 postgresql_connectivity: pass # Operator-reported baseline.
 object_storage_connectivity: pass # Operator-reported baseline.
 agent_environment: pass # Operator-reported baseline.
 codex_login: pass # Operator-reported baseline; current smoke remains pending.
-agent_phase_0: closeout_ready_for_checkpoint
+agent_phase_0: complete # Swap task closed; lifecycle merged/deployed/verified/closed recorded.
 main_only_git_model: implemented
 temporary_task_branch_policy: implemented
-merge_gate: implemented_locally_validated
-ci: pass # Owner-confirmed main CI execution.
-ci_local_validation: pass # 260 tests: 257 foundation/unit and 3 isolated integration; Ruff/config/secret scan pass.
-github_hosted_ci: pass # Owner-confirmed main CI execution.
-auto_merge: pass # Owner-confirmed automatic squash merge, PR 2.
+merge_gate: pass # MERGE_READY (all 13 checks) at 8753c1d; fail-closed behavior unchanged.
+ci: pass # foundation CI SUCCESS on PR heads and main pushes (94d6c59, bdfd2eb).
+ci_local_validation: pass # 261 tests plus Ruff/config/secret scan at checkpoint 8753c1d.
+github_hosted_ci: pass # foundation workflow SUCCESS on PRs #2/#3/#4 and main pushes.
+auto_merge: pass # Gated squash merges executed (owner-directed) after agent-gate SUCCESS; GitHub auto-merge feature itself not used.
 auto_merge_configuration: owner_verification_pending # Execution proven; protection settings are separate.
 legacy_develop_branch_deletion: pending_owner_action
-deploy_dev_workflow: executed_successfully # Owner-confirmed.
-development_deployment: pass # Owner-confirmed exact-SHA development deployment.
-provider_smoke_tests: pending # Structural validation implemented; real calls not made.
+deploy_dev_workflow: executed_successfully # Deploy development workflow_run deployed exact CI-tested SHAs 94d6c59 and bdfd2eb.
+development_deployment: pass # DEPLOYED_SHA=bdfd2eb on the OVH development environment; release + current symlink verified.
+provider_smoke_tests: pass # Real API smokes: minimax (Nebius MiniMax-M3), nemotron (Nebius Nemotron 3 Ultra), glm (Cloudflare GLM 5.3), kimi (Nebius Kimi K3, real analysis run); codex structural only.
 provider_structural_validation: implemented_locally_validated
 engineering_harnesses: implemented # Harness chain registry + KEMIRIX_ENGINEERING_HARNESS selection; Codex->OpenCode switch is a writer handoff.
-fallback_harnesses_executed: pending
+fallback_harnesses_executed: pass # OpenCode + GLM 5.3 harness executed writer/review work; second-fallback minimax profile executed real Nebius MiniMax-M3 reviews.
 agent_coordination: implemented
 memory_protocol: implemented
 research_gateway: implemented_disabled_backend
 worktree_tooling: implemented
-worktrees_initialized: partially_observed # Codex worktree exists; full setup unverified.
-five_agent_dry_run: prepared_not_executed
+worktrees_initialized: pass # /srv/kemirix/worktrees/codex active; single-writer control VM.
+five_agent_dry_run: pass # Real five-agent chain executed on FOUNDATION-CLOSEOUT-001 and FOUNDATION-QWEN-MINIMAX-SWAP-001 (codex writer, kimi analysis, minimax cross-check, GLM review, Nemotron QA).
 dbeaver_verification: pending
-phase_1_readiness: blocked_pending_human_and_external_validation
-kmx_implementation: not_started
+phase_1_readiness: pass_owner_directed # Owner directed production database start after full pipeline proof.
+kmx_implementation: in_progress # KMX-SCHEMA-001 phase_1 task created; executable kmx schema DDL underway.
 evidence_implementation: not_started
 rules_implementation: not_started
-pr_creation: pass # Owner-confirmed automation rehearsal.
+pr_creation: pass # Owner-confirmed automation rehearsal; repeated for PRs #3/#4.
 main_protection: pending_owner_configuration
 required_checks_configuration: pending_owner_configuration
 auto_delete_head_branches: pending_owner_configuration
-agent_gate_publication: implemented_pending_external_execution
+agent_gate_publication: pass # kemirix-agent-gate SUCCESS published on PR #3 (db709d7) and PR #4 (8753c1d).

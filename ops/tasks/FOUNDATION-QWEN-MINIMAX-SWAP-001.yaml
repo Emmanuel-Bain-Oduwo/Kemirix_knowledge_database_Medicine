@@ -68,12 +68,12 @@ acceptance_criteria:
   introduced.
 required_tests:
 - foundation
-status: fixes
+status: closed
 created_at: '2026-09-08T07:23:36.821113Z'
-updated_at: '2026-09-08T07:42:00.859325+00:00'
-completed_at: null
-commit_sha: f9ba0f639d8a96d1b639e0dd69406f22bd20b439
-deployed_sha: null
+updated_at: '2026-09-08T12:37:56.070538Z'
+completed_at: '2026-09-08T12:37:56.070544Z'
+commit_sha: bdfd2ebae9bc01c973e0077a1b2992d792937325
+deployed_sha: bdfd2ebae9bc01c973e0077a1b2992d792937325
 handoffs: []
 events:
 - from: created
@@ -116,3 +116,199 @@ events:
     with MiniMax-M3 via Nebius. Contract broadened at fixes status; expanded checkpoint
     requires renewed independent review.'
   timestamp: '2026-09-08T07:42:00.859325+00:00'
+- operation: checkpoint
+  role: codex
+  commit_sha: 7b81f6330a41ea28e7a1b91827575784f51a7d7e
+  timestamp: '2026-09-08T07:59:39.563262+00:00'
+- from: fixes
+  to: crosscheck
+  evidence: 'Expanded checkpoint 7b81f63 implemented, committed and pushed; PR #4
+    updated with foundation CI SUCCESS; 158 local tests, Ruff/format/config clean;
+    real provider smoke PASS for minimax (Nebius MiniMax-M3) and glm (Cloudflare);
+    prior f9ba0f6 cross-check superseded by renewed review of the expanded checkpoint.'
+  human_approved: false
+  timestamp: '2026-09-08T08:06:28.053870+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'Real Nebius MiniMax-M3 cross-check of expanded checkpoint 7b81f63 under
+    the renamed minimax role (75.5KB bounded context, 21.3s, finish stop): PASS with
+    no change requests; one minor non-blocking observation about the pre-submit task-YAML
+    snapshot field. Recorded at ops/reports/FOUNDATION-QWEN-MINIMAX-SWAP-001/minimax-crosscheck.md.'
+  human_approved: false
+  timestamp: '2026-09-08T08:06:49.731405+00:00'
+- from: review
+  to: fixes
+  evidence: 'GLM review of checkpoint 7b81f63: REQUEST_CHANGES with one MAJOR cross-merge
+    consistency defect. The closeout task yaml (landed by open PR #3 with qwen vocabulary)
+    is not migrated by this checkpoint; after both PRs merge the renamed validator
+    would reject it on load, breaking closeout lifecycle completion. Required change:
+    include the migrated minimax-vocabulary closeout yaml; re-run independent review
+    after the new checkpoint.'
+  human_approved: false
+  timestamp: '2026-09-08T08:09:45.025383+00:00'
+- operation: checkpoint
+  role: codex
+  commit_sha: c37940d9dd8c02cb13da069caea31099c91e76cc
+  timestamp: '2026-09-08T08:12:17.399928+00:00'
+- from: fixes
+  to: crosscheck
+  evidence: 'MAJOR fix implemented at checkpoint c37940d: migrated closeout task contract
+    included so main cannot end with an unloadable contract regardless of merge order;
+    PR #4 CI SUCCESS; full local suite re-passed.'
+  human_approved: false
+  timestamp: '2026-09-08T08:13:29.109543+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'Renewed real Nebius MiniMax-M3 cross-check of fixed checkpoint c37940d
+    (86.3KB context, 15.0s): PASS; the MAJOR cross-merge defect is resolved by the
+    migrated closeout contract and no other change requests remain. Recorded at minimax-crosscheck.md.'
+  human_approved: false
+  timestamp: '2026-09-08T08:14:03.862236+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM re-review of fixed checkpoint c37940d (OpenCode GLM harness, full
+    repository read access): PASS, Severity MINOR only. The MAJOR finding is verified
+    fixed by the migrated closeout contract; the rename is complete, fail-closed and
+    merge-order safe.'
+  human_approved: false
+  timestamp: '2026-09-08T08:14:56.945723+00:00'
+- from: qa
+  to: ci
+  evidence: 'Real Nebius Nemotron 3 Ultra adversarial static QA of checkpoint c37940d
+    via deep 275.5KB context (8.0s): QA_PASS, the MAJOR fix verified, no counterexamples
+    found. Recorded at nemotron-qa.md.'
+  human_approved: false
+  timestamp: '2026-09-08T08:16:39.207109+00:00'
+- operation: external_rehearsal_completed
+  role: minimax
+  result: PASS
+  commit_sha: 7b81f6330a41ea28e7a1b91827575784f51a7d7e
+  evidence: 'Real Nebius MiniMax-M3 cross-check of the rename checkpoint via bounded
+    context: PASS. Superseded by the renewed PASS at c37940d after the fixes loop.'
+  timestamp: '2026-09-08T08:18:13.590025+00:00'
+- operation: external_rehearsal_completed
+  role: glm
+  result: REQUEST_CHANGES
+  commit_sha: 7b81f6330a41ea28e7a1b91827575784f51a7d7e
+  evidence: 'GLM review found one MAJOR cross-merge defect: unmigrated closeout task
+    contract would be unloadable after both PRs merge. Fix required and implemented.'
+  timestamp: '2026-09-08T08:18:13.590025+00:00'
+- operation: external_rehearsal_completed
+  role: minimax
+  result: PASS
+  commit_sha: c37940d9dd8c02cb13da069caea31099c91e76cc
+  evidence: 'Renewed real Nebius MiniMax-M3 cross-check of fixed checkpoint c37940d:
+    PASS with no change requests.'
+  timestamp: '2026-09-08T08:18:13.590025+00:00'
+- operation: external_rehearsal_completed
+  role: glm
+  result: PASS
+  commit_sha: c37940d9dd8c02cb13da069caea31099c91e76cc
+  evidence: 'GLM re-review of fixed checkpoint c37940d: PASS, Severity MINOR only;
+    MAJOR fix verified.'
+  timestamp: '2026-09-08T08:18:13.590025+00:00'
+- operation: external_rehearsal_completed
+  role: nemotron
+  result: QA_PASS
+  commit_sha: c37940d9dd8c02cb13da069caea31099c91e76cc
+  evidence: 'Real Nebius Nemotron 3 Ultra adversarial QA of c37940d via deep 275.5KB
+    context: QA_PASS, no counterexamples.'
+  timestamp: '2026-09-08T08:18:13.590025+00:00'
+- operation: merge_gate
+  role: codex
+  result: MERGE_READY
+  commit_sha: c37940d9dd8c02cb13da069caea31099c91e76cc
+  evidence: Deterministic merge gate MERGE_READY at c37940d (all checks true, report_minimax/report_glm/report_nemotron)
+    with live PR 4 foundation CI SUCCESS. kemirix-agent-gate publication pending PR
+    3 merge (publisher module and strict gate live on the closeout branch); after
+    rebase the chain re-runs and the publisher publishes the status. No merge performed.
+  timestamp: '2026-09-08T08:18:13.590025+00:00'
+- operation: contract_expanded
+  role: codex
+  evidence: 'Owner directive after closeout merge (main 94d6c59): rebase the swap
+    branch onto the new main, fold in the Nemotron model-id capitalization correction
+    (nvidia/Nemotron-3-Ultra-550b-a55b) in the provider default and README, and resolve
+    the merge overlaps (memory structure plus minimax vocabulary; migrated closeout
+    contract). Expanded checkpoint requires renewed independent review.'
+  timestamp: '2026-09-08T08:40:01.507448+00:00'
+- operation: checkpoint
+  role: codex
+  commit_sha: 8753c1d21124f7991c568b2fc273655043461181
+  timestamp: '2026-09-08T08:41:04.434666+00:00'
+- from: fixes
+  to: crosscheck
+  evidence: 'Rebased expanded checkpoint 8753c1d implemented, force-pushed with lease
+    and verified on remote; PR #4 foundation CI SUCCESS at 08:42Z; 261 local tests,
+    Ruff/format/config clean; provider smokes PASS for minimax (Nebius MiniMax-M3)
+    and glm (Cloudflare); Nemorus model-id capitalization corrected to nvidia/Nemotron-3-Ultra-550b-a55b.
+    Expanded checkpoint requires renewed independent review.'
+  human_approved: false
+  timestamp: '2026-09-08T09:01:58.315064+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'Renewed real Nebius MiniMax-M3 cross-check of rebased expanded checkpoint
+    8753c1d under the renamed minimax role (104.8KB bounded context, 15.8s, finish
+    stop): PASS with no change requests. Recorded at ops/reports/FOUNDATION-QWEN-MINIMAX-SWAP-001/minimax-crosscheck.md
+    and validated by the deterministic report validator.'
+  human_approved: false
+  timestamp: '2026-09-08T09:03:36.792012+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM 5.3 review of rebased expanded checkpoint 8753c1d (OpenCode GLM harness,
+    full repository read access): PASS, Severity MINOR only. Reviewer independently
+    re-executed the full suite (261 tests passed) and provider smokes for minimax,
+    nemotron (corrected model id) and glm; the rename is complete, fail-closed and
+    merge-order safe. Recorded at ops/reports/FOUNDATION-QWEN-MINIMAX-SWAP-001/glm-review.md.'
+  human_approved: false
+  timestamp: '2026-09-08T09:15:05.289212+00:00'
+- from: qa
+  to: ci
+  evidence: 'Real Nebius Nemotron 3 Ultra adversarial static QA of rebased expanded
+    checkpoint 8753c1d via deep 298.3KB context (9.5s): QA_PASS, zero counterexamples
+    found. Recorded at ops/reports/FOUNDATION-QWEN-MINIMAX-SWAP-001/nemotron-qa.md
+    and validated by the deterministic report validator.'
+  human_approved: false
+  timestamp: '2026-09-08T09:15:35.359219+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'Renewed review chain complete at checkpoint 8753c1d: minimax cross-check
+    PASS (real Nebius MiniMax-M3, 104.8KB context), GLM review PASS/MINOR (OpenCode
+    GLM harness, full repo read access, 261 tests and provider smokes independently
+    re-executed), Nemotron adversarial QA QA_PASS (real Nebius Nemotron 3 Ultra, deep
+    298.3KB context, zero counterexamples). Deterministic merge gate MERGE_READY (all
+    13 checks true); kemirix-agent-gate published success on PR 4 head; PR 4 squash-merged
+    to main as bdfd2eb; main CI success; Deploy development workflow deployed the
+    exact tested SHA bdfd2eb to the OVH development environment automatically.'
+  human_approved: true
+  timestamp: '2026-09-08T12:37:40.025584+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: PR 4 squash-merged into main as bdfd2ebae9bc01c973e0077a1b2992d792937325
+    after all gates; verified via GitHub API.
+  human_approved: true
+  timestamp: '2026-09-08T12:37:40.193325+00:00'
+- from: merged
+  to: deployed
+  evidence: GitHub Actions Deploy development (workflow_run after main CI success)
+    SSH-deployed the exact CI-tested main commit bdfd2eb to the OVH development environment;
+    /srv/kemirix/runtime/development/DEPLOYED_SHA reads bdfd2ebae9bc01c973e0077a1b2992d792937325
+    with release directory and current symlink updated.
+  human_approved: true
+  timestamp: '2026-09-08T12:37:40.360148+00:00'
+- from: deployed
+  to: verified
+  evidence: 'Deployment verified on the OVH development VM: release checkout at the
+    exact SHA bdfd2eb, current symlink updated, deployed runtime structurally validated
+    (provider configuration, tests and smoke surface unchanged by the rename).'
+  human_approved: true
+  timestamp: '2026-09-08T12:37:55.903398+00:00'
+- from: verified
+  to: closed
+  evidence: 'Owner-verified end-to-end: five-agent review chain (minimax cross-check,
+    GLM review, Nemotron adversarial QA plus codex writer and kimi research seat),
+    deterministic merge gate, published agent gate, automatic squash merge to main,
+    main CI success and automatic OVH deployment of the exact tested SHA. Task acceptance
+    criteria met; qwen naming eliminated from the active engineering system; corrected
+    Nemotron model id default live.'
+  human_approved: true
+  timestamp: '2026-09-08T12:37:56.070545+00:00'
