@@ -1,7 +1,9 @@
-# Phase 0: no executable domain DDL. Promote only in a reviewed migration task.
+# Migration suite: executable prefix only, in reviewed order.
+# migrations/001_kmx.sql promoted by KMX-SCHEMA-001 (phase_1) after review.
+# 002/003 remain pending placeholders until their reviewed design tasks land.
 migrations:
   - path: migrations/001_kmx.sql
-    state: pending
+    state: executable
   - path: migrations/002_evidence.sql
     state: pending
   - path: migrations/003_rules.sql

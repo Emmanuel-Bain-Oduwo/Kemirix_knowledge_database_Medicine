@@ -54,10 +54,10 @@ def test_runtime_drift(release, drift):
     assert runtime.verify(Path("/unused"), root, sha)["result"] == "RUNTIME DRIFT DETECTED"
 
 
-def test_migrations_pending_without_execution():
+def test_migrations_executable_kmx_prefix():
     ready, pending = plan(ROOT)
-    assert not ready
-    assert len(pending) == 3
+    assert ready == ["migrations/001_kmx.sql"]
+    assert pending == ["migrations/002_evidence.sql", "migrations/003_rules.sql"]
 
 
 def test_migration_cannot_hide_ddl(tmp_path):
