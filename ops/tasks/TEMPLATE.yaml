@@ -1,0 +1,40 @@
+# Fill required nulls and scope before coordinator create. This template is intentionally invalid.
+schema_version: 2
+task_id: null
+phase: null
+goal: null
+production_writer: codex
+researcher: kimi
+cross_checker: qwen
+reviewer: glm
+validator: nemotron
+active_writer: codex
+writer_priority:
+- codex
+- glm
+- qwen
+- kimi
+allowed_paths: []
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+base_sha: null
+branch: null
+# Kimi research report is required only where source/data analysis is relevant.
+research_required: true
+acceptance_criteria: []
+required_tests:
+- foundation
+status: created
+created_at: null
+updated_at: null
+completed_at: null
+commit_sha: null
+deployed_sha: null
+handoffs: []
+events: []

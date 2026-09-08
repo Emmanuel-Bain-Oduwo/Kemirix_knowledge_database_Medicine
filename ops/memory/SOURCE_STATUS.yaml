@@ -1,0 +1,110 @@
+# Lane keys map explicitly to existing configuration source_id slugs.
+sources:
+  S01:
+    source_id: rxnorm_athena
+    config: config/sources/01_rxnorm.yaml
+    status: not_started
+  S02:
+    source_id: athena_extension
+    config: config/sources/02_athena_extension.yaml
+    status: not_started
+  S03:
+    source_id: gsrs_unii
+    config: config/sources/03_gsrs_unii.yaml
+    status: not_started
+  S04:
+    source_id: chebi_unichem
+    config: config/sources/04_chebi_unichem.yaml
+    status: not_started
+  S05:
+    source_id: medrt
+    config: config/sources/05_medrt.yaml
+    status: not_started
+  S06:
+    source_id: dailymed
+    config: config/sources/06_dailymed.yaml
+    status: not_started
+  S07:
+    source_id: openfda_label
+    config: config/sources/07_openfda_label.yaml
+    status: not_started
+  S08:
+    source_id: ppb_register
+    config: config/sources/08_ppb_register.yaml
+    status: not_started
+  S09:
+    source_id: ppb_smpc
+    config: config/sources/09_ppb_smpc.yaml
+    status: not_started
+  S10:
+    source_id: keml
+    config: config/sources/10_keml.yaml
+    status: not_started
+  S11:
+    source_id: knmf
+    config: config/sources/11_knmf.yaml
+    status: not_started
+  S12:
+    source_id: kenya_moh
+    config: config/sources/12_kenya_moh.yaml
+    status: not_started
+  S13:
+    source_id: who
+    config: config/sources/13_who.yaml
+    status: not_started
+  S14:
+    source_id: kdigo
+    config: config/sources/14_kdigo.yaml
+    status: not_started
+  S15:
+    source_id: cpic_clinpgx
+    config: config/sources/15_cpic_clinpgx.yaml
+    status: not_started
+  S16:
+    source_id: inxight
+    config: config/sources/16_inxight.yaml
+    status: not_started
+  S17:
+    source_id: drugcentral
+    config: config/sources/17_drugcentral.yaml
+    status: not_started
+  S18:
+    source_id: onsides
+    config: config/sources/18_onsides.yaml
+    status: not_started
+  S19:
+    source_id: civic
+    config: config/sources/19_civic.yaml
+    status: not_started
+  S20:
+    source_id: chembl
+    config: config/sources/20_chembl.yaml
+    status: not_started
+  S21:
+    source_id: gtopdb
+    config: config/sources/21_gtopdb.yaml
+    status: not_started
+  S22:
+    source_id: dgidb
+    config: config/sources/22_dgidb.yaml
+    status: not_started
+  S23:
+    source_id: open_targets
+    config: config/sources/23_open_targets.yaml
+    status: not_started
+  S24:
+    source_id: drugmechdb
+    config: config/sources/24_drugmechdb.yaml
+    status: not_started
+  S25:
+    source_id: ciel_ocl
+    config: config/sources/25_ciel_ocl.yaml
+    status: not_started
+  S26:
+    source_id: ema
+    config: config/sources/26_ema.yaml
+    status: not_started
+  S27:
+    source_id: mhra
+    config: config/sources/27_mhra.yaml
+    status: not_started

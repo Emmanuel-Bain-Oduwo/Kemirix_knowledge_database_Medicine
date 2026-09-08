@@ -1,0 +1,43 @@
+schema_version: 2
+task_id: FOUNDATION-DRYRUN-001
+phase: phase_0f
+goal: Validate a harmless engineering-only text fixture through the five-agent review
+  lifecycle.
+production_writer: codex
+researcher: kimi
+cross_checker: qwen
+reviewer: glm
+validator: nemotron
+active_writer: codex
+writer_priority:
+- codex
+- glm
+- qwen
+- kimi
+allowed_paths:
+- tests/fixtures/foundation-dryrun.txt
+forbidden_paths:
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+- SKILL.md
+- ops/memory
+base_sha: d9beeb07a5ae4d08be993399b953d34d7f4587ca
+branch: agent/codex/FOUNDATION-DRYRUN-001
+acceptance_criteria:
+- Fixture contains only harmless engineering text.
+- All four role reports contain actual review results and references.
+- Foundation tests pass and human reviews the final CI-ready handoff.
+required_tests:
+- foundation
+- integration
+status: created
+created_at: '2026-09-07T15:10:46.967404+00:00'
+updated_at: '2026-09-07T15:10:46.967404+00:00'
+completed_at: null
+commit_sha: null
+deployed_sha: null
+handoffs: []
+events: []

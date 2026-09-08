@@ -1,0 +1,67 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: kemirix_knowledge
+          POSTGRES_USER: kemirix_ci
+          POSTGRES_PASSWORD: disposable-ci-only
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kemirix_ci -d kemirix_knowledge"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.10'
+          python-version: '3.12'
+      - run: uv sync --frozen
+      - run: uv run --frozen python scripts/validate_config.py
+      - run: uv run --frozen python scripts/scan-secrets.py
+      - run: uv run --frozen ruff check .
+      - run: uv run --frozen ruff format --check .
+      - run: uv run --frozen pytest -q -m 'not integration and not contract'
+      - name: Ensure PostgreSQL client is available
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install --yes postgresql-client
+          fi
+      - name: Clean PostgreSQL 17 and migration-from-zero gate
+        id: migrations
+        env:
+          KEMIRIX_CI_POSTGRES: '1'
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: kemirix_knowledge
+          PGUSER: kemirix_ci
+          PGPASSWORD: disposable-ci-only
+          PGCONNECT_TIMEOUT: '5'
+        run: uv run --frozen python scripts/migration_gate.py --execute-ci
+      - name: Engineering integration tests
+        run: uv run --frozen pytest -q -m integration
+      - name: Future domain contract tests
+        if: steps.migrations.outputs.executable_count != '0'
+        run: uv run --frozen pytest -q -m contract
+      - name: Report pending domain suite
+        if: steps.migrations.outputs.state == 'pending'
+        run: echo 'Domain migration suite pending. Placeholder SQL is not executable.' >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,93 @@
+schema_version: 2
+task_id: FOUNDATION-001
+phase: phase_0
+goal: Finalize and externally verify the Kemirix Phase 0 engineering foundation.
+production_writer: codex
+researcher: kimi
+cross_checker: qwen
+reviewer: glm
+validator: nemotron
+active_writer: codex
+writer_priority:
+- codex
+- glm
+- qwen
+- kimi
+allowed_paths:
+- .github/workflows/ci.yml
+- .github/workflows/deploy-dev.yml
+- docs/AGENT_COORDINATION.md
+- docs/AGENT_FAILOVER.md
+- docs/CI_CD.md
+- docs/DEVELOPMENT_WORKFLOW.md
+- docs/OPERATING_MODEL.md
+- docs/ENGINEERING_HARNESSES.md
+- opencode.json
+- ops/agents/AGENTS.md
+- ops/agents/CODEX.md
+- ops/memory/CURRENT_STATE.md
+- ops/memory/DECISIONS.md
+- ops/memory/KNOWN_ISSUES.md
+- ops/memory/PHASE_STATUS.yaml
+- ops/reports/FOUNDATION-DRYRUN-001/README.md
+- ops/reports/foundation-validation.md
+- ops/tasks/TEMPLATE.yaml
+- ops/tasks/FOUNDATION-001.yaml
+- scripts/agent-open-pr.sh
+- scripts/agent-submit.sh
+- scripts/deploy-dev.sh
+- scripts/runtime.py
+- scripts/verify-runtime.sh
+- src/agents/checkpoint.py
+- src/agents/coordinator.py
+- src/agents/context.py
+- src/agents/gitops.py
+- src/agents/harness.py
+- src/agents/merge_gate.py
+- src/agents/memory.py
+- src/agents/models.py
+- src/agents/providers.py
+- src/agents/tasks.py
+- tests/test_agents.py
+- tests/test_runtime.py
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+base_sha: dd3cb34c8e930b10b36de1ea25e33ccdb4b644df
+branch: agent/codex/FOUNDATION-001
+research_required: false
+acceptance_criteria:
+- Main is the only permanent branch.
+- Routine engineering checkpoint commit and push are automated.
+- Pull requests target main and fail closed on required gates.
+- Development deployment uses the exact approved main SHA.
+- Git-backed project memory survives engineering harness handoff.
+- Codex plus GPT-6 Astra is primary and OpenCode plus GLM/Qwen are fallback harnesses.
+- KMX, Evidence, Rules and clinical migrations remain untouched.
+- Foundation tests, Ruff, configuration validation and secret scan pass.
+required_tests:
+- foundation
+status: implementation
+created_at: '2026-09-07T18:35:34Z'
+updated_at: '2026-09-07T19:12:00Z'
+completed_at: null
+commit_sha: null
+deployed_sha: null
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: Task scope, ownership and phase 0 clinical boundaries reviewed; research
+    not required
+  human_approved: false
+  timestamp: '2026-09-07T19:05:01.495486+00:00'
+- from: research
+  to: implementation
+  evidence: Foundation task/checkpoint lifecycle fix implemented with full test coverage
+  human_approved: false
+  timestamp: '2026-09-07T19:05:01.645087+00:00'

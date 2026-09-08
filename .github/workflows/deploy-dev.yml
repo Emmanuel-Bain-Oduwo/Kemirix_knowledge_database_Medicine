@@ -1,0 +1,57 @@
+name: Deploy development
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: kemirix-development-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: development
+    steps:
+      - name: Deploy exact CI-tested main commit
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          DEV_HOST: ${{ secrets.KEMIRIX_DEV_VM_HOST }}
+          DEV_USER: ${{ secrets.KEMIRIX_DEV_VM_USER }}
+          DEV_KEY: ${{ secrets.KEMIRIX_DEV_VM_SSH_KEY }}
+          DEV_KNOWN_HOSTS: ${{ secrets.KEMIRIX_DEV_VM_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$DEV_HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]]
+          [[ "$DEV_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          test -n "$DEV_KEY"
+          test -n "$DEV_KNOWN_HOSTS"
+          umask 077
+          ssh_dir=$(mktemp -d)
+          trap 'rm -rf -- "$ssh_dir"' EXIT
+          printf '%s\n' "$DEV_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$DEV_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          ssh -i "$ssh_dir/key" -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            "$DEV_USER@$DEV_HOST" "bash -s -- $TESTED_SHA" <<'REMOTE'
+          set -euo pipefail
+          sha=$1
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+          repo=/srv/kemirix/deploy/repository.git
+          git --git-dir="$repo" fetch origin "$sha" >/dev/null 2>&1
+          git --git-dir="$repo" fetch origin main:refs/remotes/origin/main >/dev/null 2>&1
+          git --git-dir="$repo" merge-base --is-ancestor "$sha" refs/remotes/origin/main
+          script=$(mktemp)
+          trap 'rm -f -- "$script"' EXIT
+          git --git-dir="$repo" show "$sha:scripts/deploy-dev.sh" > "$script"
+          bash "$script" "$sha"
+          REMOTE
