@@ -1,0 +1,146 @@
+schema_version: 2
+task_id: FOUNDATION-SKILL-SYNC-001
+phase: phase_0
+goal: 'Synchronize the repository SKILL.md with the owner-approved blueprint /srv/kemirix/blueprints/2026-09-08/SKILL
+  NEW(3).md (Kemirix Knowledge Foundation Final Agent SKILL v5.0, updated 2026-09-08)
+  using the explicit owner-approved skill-update mechanism. Verbatim content sync
+  only: no other file changes.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- SKILL.md
+forbidden_paths:
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+- src/database
+- src/storage
+- opencode.json
+- .github
+- docs
+- ops/memory
+- ops/tasks
+base_sha: 44db32f5ab7a03f9e53dab8b79414e968f4243ad
+branch: agent/glm/FOUNDATION-SKILL-SYNC-001
+research_required: false
+owner_approved_skill_update: true
+acceptance_criteria:
+- SKILL.md in the repository is byte-identical to the owner-approved /srv/kemirix/blueprints/2026-09-08/SKILL
+  NEW(3).md (version 5.0, updated 2026-09-08).
+- No other file changes; no engineering-system, domain, migration or documentation
+  edits.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-08T18:15:16.617739Z'
+updated_at: '2026-09-08T18:25:40.868182Z'
+completed_at: '2026-09-08T18:25:40.868186Z'
+commit_sha: 53808646c29f0123c7206b44114bc269233d2390
+deployed_sha: 53808646c29f0123c7206b44114bc269233d2390
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the owner-approved SKILL text is the blueprint
+    file itself.'
+  human_approved: false
+  timestamp: '2026-09-08T18:15:17.477358+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: verbatim SKILL.md sync with the owner-approved v5.0 blueprint
+    through the owner-approved skill-update mechanism (flag recorded in this contract).'
+  human_approved: false
+  timestamp: '2026-09-08T18:15:17.627364+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 782f50c3be55439a2c1ae95101d668c643574a88
+  timestamp: '2026-09-08T18:15:31.274338+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: a46533b2df3590388732b8c918af59417663b6fc
+  timestamp: '2026-09-08T18:19:25.803258+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint 782f50c complete: SKILL.md byte-identical to
+    the owner-approved v5.0 blueprint (sha256 a77d988c76c5105d9c65ed3b185bba788cf21543117517bab69aca41cc1e8bbb),
+    no other changes, 291 tests and all local checks clean; PR #9 foundation CI SUCCESS.'
+  human_approved: false
+  timestamp: '2026-09-08T18:19:43.628189+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 782f50c: all eight excerpt checks OK (v5.0 header, five-role
+    chain, 22 invariants, 27-lane registry, full manifest contract, release notes,
+    simplicity rule, no forbidden additions).'
+  human_approved: false
+  timestamp: '2026-09-08T18:19:43.779693+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 782f50c: single-file verbatim SKILL.md
+    v5.0 sync verified by byte identity and sha256, mechanism compliance verified
+    (phase_0 FOUNDATION- flag contract), all v5.0 structures confirmed present, no
+    forbidden additions. Seat provenance per D020 owner directive; MiniMax is a real
+    independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-08T18:20:20.513439+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 9f2b3429f60be884a795999ae01e3386eb01b4ce
+  timestamp: '2026-09-08T18:22:10.839429+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 782f50c: sha256 identity with the owner-approved blueprint,
+    only-SKILL.md scope, 22 section-scoped invariants, 27-row registry with lowercase
+    slugs, no forbidden additions; the initial QA_FAIL was traced to the orchestrator
+    supplying a wrong counting metric, corrected and rerun with the section-scoped
+    extraction.'
+  human_approved: false
+  timestamp: '2026-09-08T18:22:27.467937+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #9 foundation CI SUCCESS on head 782f50c; all three
+    gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-08T18:22:27.624558+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #9 squash-merged into main at 5380864 after MERGE_READY and agent-gate
+    SUCCESS on exact head 782f50c; main CI SUCCESS (run 34262709584).'
+  human_approved: true
+  timestamp: '2026-09-08T18:25:40.402453+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34262766817) deployed the exact
+    merged SHA: DEPLOYED_SHA=53808646c29f0123c7206b44114bc269233d2390; the idempotent
+    migration verification path confirmed the applied kmx schema matches the executable
+    prefix.'
+  human_approved: true
+  timestamp: '2026-09-08T18:25:40.559635+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh 5380864: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-08T18:25:40.713322+00:00'
+- from: verified
+  to: closed
+  evidence: 'FOUNDATION-SKILL-SYNC-001 complete: repository SKILL.md is byte-identical
+    to the owner-approved v5.0 blueprint, delivered through the owner_approved_skill_update
+    mechanism with the full review chain (MiniMax PASS, GLM PASS, Nemotron QA_PASS),
+    merge gate MERGE_READY, agent-gate SUCCESS, squash merge at 5380864, main CI SUCCESS,
+    exact-SHA deployment verified.'
+  human_approved: true
+  timestamp: '2026-09-08T18:25:40.868187+00:00'
