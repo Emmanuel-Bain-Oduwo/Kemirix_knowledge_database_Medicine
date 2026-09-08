@@ -1,17 +1,26 @@
-engineering_foundation: ready_for_review
+engineering_foundation: final_correction_ready_for_review
 infrastructure_vm: pass # Operator-reported baseline, not re-tested here.
 github: pass # Operator-reported repository availability, not ruleset verification.
 postgresql_connectivity: pass # Operator-reported baseline.
 object_storage_connectivity: pass # Operator-reported baseline.
 agent_environment: pass # Operator-reported baseline.
 codex_login: pass # Operator-reported baseline; current smoke remains pending.
-agent_phase_0: ready_for_review
+agent_phase_0: final_correction_ready_for_review
+main_only_git_model: implemented
+temporary_task_branch_policy: implemented
+merge_gate: implemented_locally_validated
 ci: pending
-ci_local_validation: pass
+ci_local_validation: pass # Final correction: 111 local tests passed (108 unit, 3 integration).
 github_hosted_ci: pending
+auto_merge: pending_external_one_time_configuration
+auto_merge_configuration: pending # Enable Allow auto-merge + required checks in GitHub settings.
+legacy_develop_branch_deletion: pending_owner_action
 deploy_dev_workflow: implemented_not_executed
 development_deployment: pending
-provider_smoke_tests: pending
+provider_smoke_tests: pending # Structural validation implemented; real calls not made.
+provider_structural_validation: implemented_locally_validated
+engineering_harnesses: implemented # Harness chain registry + KEMIRIX_ENGINEERING_HARNESS selection; Codex->OpenCode switch is a writer handoff.
+fallback_harnesses_executed: pending
 agent_coordination: implemented
 memory_protocol: implemented
 research_gateway: implemented_disabled_backend

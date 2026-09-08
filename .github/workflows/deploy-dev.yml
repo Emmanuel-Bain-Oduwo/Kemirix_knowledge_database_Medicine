@@ -3,7 +3,7 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [develop]
+    branches: [main]
 permissions:
   contents: read
 concurrency:
@@ -14,13 +14,13 @@ jobs:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'develop' &&
+      github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: development
     steps:
-      - name: Deploy exact CI-tested develop commit
+      - name: Deploy exact CI-tested main commit
         env:
           TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
           DEV_HOST: ${{ secrets.KEMIRIX_DEV_VM_HOST }}
@@ -48,8 +48,8 @@ jobs:
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
           repo=/srv/kemirix/deploy/repository.git
           git --git-dir="$repo" fetch origin "$sha" >/dev/null 2>&1
-          git --git-dir="$repo" fetch origin develop:refs/remotes/origin/develop >/dev/null 2>&1
-          git --git-dir="$repo" merge-base --is-ancestor "$sha" refs/remotes/origin/develop
+          git --git-dir="$repo" fetch origin main:refs/remotes/origin/main >/dev/null 2>&1
+          git --git-dir="$repo" merge-base --is-ancestor "$sha" refs/remotes/origin/main
           script=$(mktemp)
           trap 'rm -f -- "$script"' EXIT
           git --git-dir="$repo" show "$sha:scripts/deploy-dev.sh" > "$script"

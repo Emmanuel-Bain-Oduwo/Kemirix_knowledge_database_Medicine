@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Invoked on VM with exact tested SHA; never sources /etc/kemirix/*.env.
-sha=${1:?exact tested develop SHA required}
+# Invoked on VM with exact tested main SHA; never sources /etc/kemirix/*.env.
+sha=${1:?exact tested main SHA required}
 [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || exit 2
 repo=/srv/kemirix/deploy/repository.git
 runner=$(mktemp /tmp/kemirix-deploy-XXXXXXXX.py)

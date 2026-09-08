@@ -88,7 +88,7 @@ def safe_checks(root, profiles=("foundation",)):
 def submit(root, message, paths=()):
     ensure_no_secrets(message)
     branch = git(root, "branch", "--show-current")
-    role, task_id = branch_parts(branch)  # Refuse main/develop before any checks/mutation.
+    role, task_id = branch_parts(branch)  # Refuse main before any checks/mutation.
     if not message.strip():
         raise ValueError("meaningful checkpoint message required")
     control = control_root(root)
@@ -96,17 +96,20 @@ def submit(root, message, paths=()):
         task = load_task(control, task_id)
         if role == task.active_writer and task.branch != branch:
             raise PermissionError("active writer branch mismatch")
-        intended = set(paths) or set(
-            filter(
-                None, git(root, "diff", "--cached", "--name-only", "--no-renames", "-z").split("\0")
-            )
-        )
-        if not intended or changed_paths(root) != intended:
+        # Branch, active writer and allowed paths are validated above and below;
+        # the checkpoint itself must also build on the recorded task base SHA.
+        try:
+            git(root, "merge-base", "--is-ancestor", task.base_sha, git(root, "rev-parse", "HEAD"))
+        except RuntimeError:
+            raise ValueError("checkpoint must descend from the recorded task base SHA") from None
+        changed = changed_paths(root)
+        intended = set(paths) if paths else changed
+        if not intended:
+            raise ValueError("no working-tree changes to submit")
+        if intended != changed:
             raise ValueError(
-                "stage intended changes or pass --path; unrelated changes must be isolated"
+                "path scope must cover all working-tree changes; unrelated changes must be isolated"
             )
-        if not paths and set(filter(None, git(root, "diff", "--name-only", "-z").split("\0"))):
-            raise ValueError("partially staged files refused; use explicit full-file --path scope")
         for path in intended:
             task.authorize(role, path)
         scan_paths(root, intended)
@@ -153,26 +156,12 @@ def submit(root, message, paths=()):
         print(json.dumps({"branch": branch, "commit_sha": sha, "push": "starting"}))
         git(root, "push", "--set-upstream", "origin", f"HEAD:refs/heads/{branch}")
         print(json.dumps({"branch": branch, "commit_sha": sha, "push": "PASS"}))
-        if shutil.which("gh"):
-            result = subprocess.run(
-                [
-                    "gh",
-                    "pr",
-                    "list",
-                    "--head",
-                    branch,
-                    "--state",
-                    "open",
-                    "--json",
-                    "number,isDraft,state",
-                ],
-                cwd=root,
-                capture_output=True,
-                text=True,
-            )
-            print(result.stdout.strip() if result.returncode == 0 else "PR status unavailable")
+        try:
+            pull = existing_pr(root, branch)
+        except RuntimeError:
+            print("PR status unavailable")
         else:
-            print("gh unavailable; PR status not checked")
+            print(json.dumps({"pr": pull}) if pull else "no open PR for branch")
         return sha
 
 
@@ -207,40 +196,100 @@ def setup_worktree(root, role, task_id, sha, base=Path("/srv/kemirix/worktrees")
     return path
 
 
-def approved_develop(root, sha):
+def approved_main(root, sha):
     import re
 
     if not re.fullmatch("[0-9a-f]{40}", sha):
-        raise ValueError("approved develop SHA required")
-    git(root, "fetch", "origin", "develop")
+        raise ValueError("approved main SHA required")
+    git(root, "fetch", "origin", "main")
     if git(root, "rev-parse", "FETCH_HEAD") != sha:
-        raise ValueError("approved SHA is not latest fetched develop; obtain renewed approval")
+        raise ValueError("approved SHA is not latest fetched main; obtain renewed approval")
     return sha
 
 
-def open_pr(root, title, body_file):
-    branch = git(root, "branch", "--show-current")
-    branch_parts(branch)
-    ensure_no_secrets(title)
-    ensure_no_secrets(Path(body_file).read_text())
+def existing_pr(root, branch):
+    if not shutil.which("gh"):
+        return None
     result = subprocess.run(
         [
             "gh",
             "pr",
-            "create",
-            "--draft",
-            "--base",
-            "develop",
+            "list",
             "--head",
             branch,
-            "--title",
-            title,
-            "--body-file",
-            str(body_file),
+            "--state",
+            "open",
+            "--json",
+            "number,isDraft,baseRefName",
+            "--base",
+            "main",
         ],
         cwd=root,
         capture_output=True,
+        text=True,
     )
     if result.returncode:
-        raise RuntimeError("draft PR creation failed; details withheld")
-    print("Draft PR created; no merge or deployment requested.")
+        raise RuntimeError("PR lookup failed; details withheld")
+    pulls = json.loads(result.stdout)
+    return pulls[0] if pulls else None
+
+
+def enable_auto_merge(root, pull):
+    # GitHub auto-merge respects branch protection and required checks; never bypasses CI.
+    if pull["isDraft"]:
+        result = subprocess.run(
+            ["gh", "pr", "ready", str(pull["number"])], cwd=root, capture_output=True, text=True
+        )
+        if result.returncode:
+            raise RuntimeError("marking PR ready failed; details withheld")
+    result = subprocess.run(
+        ["gh", "pr", "merge", str(pull["number"]), "--auto", "--squash"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode:
+        raise RuntimeError(
+            "auto-merge enablement failed; verify the one-time repository configuration"
+        )
+    print("Auto-merge (squash) enabled; GitHub merges once required checks pass.")
+
+
+def open_pr(root, title, body_file, auto_merge=False):
+    branch = git(root, "branch", "--show-current")
+    branch_parts(branch)  # Task branches only; main refused.
+    ensure_no_secrets(title)
+    ensure_no_secrets(Path(body_file).read_text())
+    if not shutil.which("gh"):
+        raise RuntimeError("gh unavailable; PR status not checked")
+    pull = existing_pr(root, branch)
+    if pull:
+        print(json.dumps({"branch": branch, "reused_pr": pull, "base": "main"}))
+    else:
+        result = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "create",
+                "--draft",
+                "--base",
+                "main",
+                "--head",
+                branch,
+                "--title",
+                title,
+                "--body-file",
+                str(body_file),
+            ],
+            cwd=root,
+            capture_output=True,
+        )
+        if result.returncode:
+            raise RuntimeError("draft PR creation failed; details withheld")
+        pull = existing_pr(root, branch)
+        print(json.dumps({"branch": branch, "created_pr": pull, "base": "main"}))
+    if auto_merge:
+        if not pull:
+            raise RuntimeError("cannot enable auto-merge without an open PR")
+        enable_auto_merge(root, pull)
+    return pull["number"] if pull else None

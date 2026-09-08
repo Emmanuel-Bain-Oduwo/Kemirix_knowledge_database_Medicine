@@ -74,15 +74,17 @@ def test_migration_cannot_hide_ddl(tmp_path):
 def test_workflows_security_and_syntax():
     ci = yaml.load((ROOT / ".github/workflows/ci.yml").read_text(), Loader=yaml.BaseLoader)
     cd = yaml.load((ROOT / ".github/workflows/deploy-dev.yml").read_text(), Loader=yaml.BaseLoader)
-    assert ci["on"]["pull_request"]["branches"] == ["develop", "main"]
+    assert ci["on"]["pull_request"]["branches"] == ["main"]
+    assert ci["on"]["push"]["branches"] == ["main"]
     assert ci["jobs"]["foundation"]["runs-on"] == "ubuntu-latest"
     assert ci["jobs"]["foundation"]["services"]["postgres"]["image"] == "postgres:17"
+    assert cd["on"]["workflow_run"]["branches"] == ["main"]
     assert "pull_request" not in cd["on"]
     gate = cd["jobs"]["deploy"]["if"]
     for required in [
         "conclusion == 'success'",
         "event == 'push'",
-        "head_branch == 'develop'",
+        "head_branch == 'main'",
         "head_repository.full_name == github.repository",
     ]:
         assert required in gate
@@ -94,6 +96,7 @@ def test_workflows_security_and_syntax():
     text = (ROOT / ".github/workflows/deploy-dev.yml").read_text()
     assert "github.event.workflow_run.head_sha" in text
     assert "StrictHostKeyChecking=yes" in text
+    assert "refs/remotes/origin/main" in text
     for forbidden in ["DATABASE_URL", "NEBIUS_API_KEY", "CLOUDFLARE_API_TOKEN", "/etc/kemirix"]:
         assert forbidden not in text
 
@@ -168,7 +171,7 @@ def test_worktree_creation_and_conflict_preservation(tmp_path):
         "-m",
         "isolated empty fixture",
     )
-    git("update-ref", "refs/heads/develop", sha)
+    git("update-ref", "refs/heads/main", sha)
     path = setup_worktree(repo, "codex", "TEST-001", sha, base=tmp_path / "worktrees")
     assert path.name == "codex"
     assert setup_worktree(repo, "codex", "TEST-001", sha, base=tmp_path / "worktrees") == path
@@ -218,7 +221,7 @@ def test_release_switch_rollback_and_failure_recovery(tmp_path, monkeypatch):
                 "synthetic release",
             )
         )
-    git("update-ref", "refs/remotes/origin/develop", commits[-1])
+    git("update-ref", "refs/remotes/origin/main", commits[-1])
     actual_git, actual_command = runtime.git, runtime.command
 
     def no_network_git(repo, *args):

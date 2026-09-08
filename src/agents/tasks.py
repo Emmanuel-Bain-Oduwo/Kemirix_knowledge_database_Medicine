@@ -31,6 +31,41 @@ def save_task(root, task):
     )
 
 
+def create_task(root, data):
+    """Create a new task; the contract must be schema-valid before any submit.
+
+    Administrative lifecycle fields default automatically, so a completed
+    TEMPLATE.yaml only needs the meaningful scope fields. Creation refuses
+    duplicates, invalid contracts and non-initial statuses, and the saved
+    contract round-trips through the strict loader.
+    """
+    data = dict(data)
+    if data.get("status") not in (None, "created"):
+        raise ValueError("new task must be created")
+    stamp = now()
+    defaults = {
+        "schema_version": 2,
+        "status": "created",
+        "writer_priority": PRIORITY,
+        "created_at": stamp,
+        "updated_at": stamp,
+        "completed_at": None,
+        "commit_sha": None,
+        "deployed_sha": None,
+        "handoffs": [],
+        "events": [],
+    }
+    for field, default in defaults.items():
+        if data.get(field) is None:
+            data[field] = default
+    task = Task.model_validate(data)
+    with writer_lock(root):
+        if task_path(root, task.task_id).exists():
+            raise ValueError("task already exists")
+        save_task(root, task)
+        return task
+
+
 def write_owned(root, worktree, task_id, role, relative, content):
     with writer_lock(root):
         task = load_task(root, task_id)
@@ -83,7 +118,11 @@ def transition(root, task_id, target, evidence, human=False, commit_sha=None, de
             "review": ("glm", "PASS"),
             "qa": ("nemotron", "QA_PASS"),
         }
-        if task.status in role_gate and target != "fixes":
+        # Kimi research is required only where the task contract declares it.
+        gated = task.status in role_gate and not (
+            task.status == "research" and not task.research_required
+        )
+        if gated and target != "fixes":
             role, expected = role_gate[task.status]
             if role == task.active_writer:
                 if not human:
@@ -130,6 +169,8 @@ def handoff(root, task_id, new_writer, details, human=False, prepare=None):
             raise ValueError("handoff requires an implementation checkpoint")
         if not task.commit_sha or task.commit_sha != details["last_commit_sha"]:
             raise ValueError("handoff must use the recorded exact checkpoint")
+        # The handoff preserves the task's recorded base and checkpoint (HEAD)
+        # SHA; the replacement writer resumes at the exact recorded checkpoint.
         record = {
             **details,
             "task_id": task_id,
@@ -137,6 +178,8 @@ def handoff(root, task_id, new_writer, details, human=False, prepare=None):
             "new_writer": new_writer,
             "old_branch": task.branch,
             "new_branch": f"agent/{new_writer}/{task_id}",
+            "base_sha": task.base_sha,
+            "checkpoint_sha": task.commit_sha,
             "timestamp": now().isoformat(),
             "human_approved": True,
         }
@@ -145,7 +188,6 @@ def handoff(root, task_id, new_writer, details, human=False, prepare=None):
             active_writer=new_writer,
             production_writer=new_writer,
             branch=record["new_branch"],
-            base_sha=task.commit_sha,
             updated_at=now(),
             handoffs=[*task.handoffs, record],
         )

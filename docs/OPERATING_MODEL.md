@@ -12,7 +12,9 @@ Read SKILL.md before acting. It is the product constitution; chat history and tm
 
 Only one production writer is active per task. The Python coordinator validates contracts and paths, records lifecycle changes and builds context. Models never decide coordination authority or clinical approval. Reviewers own separate report paths. See [coordination](AGENT_COORDINATION.md) and [memory](AGENT_MEMORY.md).
 
-Use `agent/<agent>/<task-id>` branches, PRs into develop and independently reviewed CI. Main is stable/release; no direct agent pushes or automatic production deployment. A successful develop push CI run can deploy its exact tested SHA to development. Runtime changes are reconstructed from Git; never edit current/ manually. See [CI/CD](CI_CD.md).
+Use `agent/<agent>/<task-id>` branches and PRs into `main`, the single permanent branch. When all required automated gates pass (CI, Qwen, GLM, Nemotron, required tests, valid contract, no blockers), GitHub merges automatically with squash merge and the resulting main SHA becomes the approved engineering baseline. There is no direct agent push to main, no develop/staging/release branch and no automatic production deployment; a validated main push deploys its exact tested SHA to the OVH development environment automatically. Runtime changes are reconstructed from Git; never edit current/ manually. See [CI/CD](CI_CD.md).
+
+Codex + GPT-6 Astra is the primary engineering harness; OpenCode + GLM 5.3 is the first fallback harness and OpenCode + Qwen 3.8 the second. Switching from Codex to OpenCode is an explicit writer handoff that preserves the same task, branch, base/HEAD SHA, Git-backed memory, reports and deterministic coordinator state. See [engineering harnesses](ENGINEERING_HARNESSES.md).
 
 Deterministic identity, mapping_exception for zero/multiple/conflicting matches, source-specific Evidence and Rule inheritance remain frozen. follow_up is an Evidence/Rule field when connected Evidence supports it; it is never one of the 24 categories. Code deployment does not approve or activate clinical knowledge.
 

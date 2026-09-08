@@ -5,10 +5,10 @@ import json
 from pathlib import Path
 
 from .context import build_context
-from .gitops import approved_develop, control_root, git, setup_worktree
-from .memory import load_yaml, record_run, writer_lock
-from .models import Task
-from .tasks import handoff, load_task, next_stage, save_task, task_path, transition, write_owned
+from .gitops import approved_main, control_root, git, setup_worktree
+from .memory import load_yaml, record_run
+from .merge_gate import evaluate
+from .tasks import create_task, handoff, load_task, next_stage, transition, write_owned
 
 
 def main(argv=None):
@@ -41,18 +41,18 @@ def main(argv=None):
             p.add_argument("--content-file", type=Path, required=True)
     create = sub.add_parser("create")
     create.add_argument("contract", type=Path)
+    gate = sub.add_parser("merge-gate")
+    gate.add_argument("task_id")
+    gate.add_argument("--branch", required=True)
+    gate.add_argument("--base-sha", required=True)
+    gate.add_argument("--head-sha", required=True)
+    gate.add_argument("--ci-pass", action="store_true")
+    gate.add_argument("--test-result", action="append", default=[])
     args = parser.parse_args(argv)
     try:
         root = control_root(args.root)
         if args.command == "create":
-            task = Task.model_validate(load_yaml(args.contract))
-            if task.status != "created":
-                raise ValueError("new task must be created")
-            with writer_lock(root):
-                if task_path(root, task.task_id).exists():
-                    raise ValueError("task already exists")
-                save_task(root, task)
-            print(task.task_id)
+            print(create_task(root, load_yaml(args.contract)).task_id)
         elif args.command == "status":
             task = load_task(root, args.task_id)
             print(
@@ -67,9 +67,9 @@ def main(argv=None):
             print(json.dumps(context, indent=2))
         elif args.command == "start":
             task = load_task(root, args.task_id)
-            sha = approved_develop(root, args.approved_sha)
+            sha = approved_main(root, args.approved_sha)
             if task.base_sha != sha:
-                raise ValueError("task base must match approved develop")
+                raise ValueError("task base must match approved main")
             print(setup_worktree(root, args.role, args.task_id, sha))
         elif args.command == "finish":
             result = transition(
@@ -98,8 +98,9 @@ def main(argv=None):
                 raise ValueError("handoff checkpoint mismatch")
 
             # New worktree is inert until handoff updates active_writer; no agent is launched.
+            # The replacement harness resumes at the exact recorded checkpoint (HEAD) SHA.
             def prepare(updated):
-                setup_worktree(root, updated.active_writer, updated.task_id, updated.base_sha)
+                setup_worktree(root, updated.active_writer, updated.task_id, updated.commit_sha)
 
             print(handoff(root, args.task_id, args.new_writer, details, True, prepare).branch)
         elif args.command == "write":
@@ -114,6 +115,26 @@ def main(argv=None):
                 root, args.root, args.task_id, args.role, args.path, args.content_file.read_text()
             )
             print("Owned path updated.")
+        elif args.command == "merge-gate":
+            from .gitops import git as git_command
+
+            test_results = {name: True for name in args.test_result}
+            # Fail closed when the approved main head cannot be fetched.
+            git_command(root, "fetch", "origin", "main")
+            main_head = git_command(root, "rev-parse", "FETCH_HEAD")
+            report = evaluate(
+                root,
+                args.task_id,
+                branch=args.branch,
+                base_sha=args.base_sha,
+                head_sha=args.head_sha,
+                ci_pass=args.ci_pass,
+                test_results=test_results,
+                main_head=main_head,
+            )
+            print(json.dumps(report, indent=2))
+            if report["result"] != "MERGE_READY":
+                parser.exit(1, "Merge gate: NOT READY.\n")
     except Exception:
         # Validation errors can contain input values: never dump them into shared logs.
         parser.exit(

@@ -42,6 +42,10 @@ PROTECTED = [
     ".github",
 ]
 PHASE_ZERO = ["migrations", "src/kmx", "src/evidence", "src/rules", "src/sources"]
+FOUNDATION_PREFIX = "FOUNDATION-"
+# The phase 0 foundation bootstrap has to build engineering governance itself, so
+# it may own the governance prefixes above; it never owns these baseline paths.
+BOOTSTRAP_PROTECTED = ["SKILL.md", "ops/memory/INVARIANTS.md", ".git", ".env"]
 
 
 def path_value(value):
@@ -64,7 +68,7 @@ def branch_parts(branch):
         r"agent/(codex|kimi|qwen|glm|nemotron)/([A-Za-z0-9][A-Za-z0-9_-]{0,79})", branch
     )
     if not match:
-        raise ValueError("requires agent/<agent>/<task-id> branch; main/develop refused")
+        raise ValueError("requires agent/<agent>/<task-id> branch; main refused")
     return match.groups()
 
 
@@ -85,6 +89,7 @@ class Task(BaseModel):
     forbidden_paths: list[str] = Field(min_length=1)
     base_sha: str = Field(pattern=r"^[0-9a-f]{40}$")
     branch: str
+    research_required: bool = True
     acceptance_criteria: list[str] = Field(min_length=1)
     required_tests: list[Literal["foundation", "integration", "contract"]] = Field(min_length=1)
     status: str
@@ -137,7 +142,7 @@ class Task(BaseModel):
         if self.created_at.tzinfo is None or self.updated_at.tzinfo is None:
             raise ValueError("timezone required")
         for allowed in self.allowed_paths:
-            if any(inside(allowed, p) or inside(p, allowed) for p in PROTECTED):
+            if any(inside(allowed, p) or inside(p, allowed) for p in self.protected_scope()):
                 raise ValueError("task cannot own governance or broad repository scope")
             if self.phase.startswith("phase_0") and any(
                 inside(allowed, p) or inside(p, allowed) for p in PHASE_ZERO
@@ -150,6 +155,25 @@ class Task(BaseModel):
         if (self.status == "closed") != (self.completed_at is not None):
             raise ValueError("completion timestamp must match closed state")
         return self
+
+    @property
+    def foundation_bootstrap(self):
+        """True only for the tightly scoped phase 0 foundation bootstrap.
+
+        Requires phase_0 exactly, a FOUNDATION- task ID and the matching
+        agent/<writer>/FOUNDATION-* branch (enforced structurally by contract
+        validation). Subphases such as phase_0a, later phases, ordinary task IDs
+        and mismatched branches keep the full governance restriction.
+        """
+        return (
+            self.phase == "phase_0"
+            and self.task_id.startswith(FOUNDATION_PREFIX)
+            and self.branch.startswith(f"agent/{self.active_writer}/{FOUNDATION_PREFIX}")
+        )
+
+    def protected_scope(self):
+        """Paths this task can never own; ordinary tasks keep the full set."""
+        return BOOTSTRAP_PROTECTED if self.foundation_bootstrap else PROTECTED
 
     def allowed_for(self, role):
         if role not in REPORTS:
@@ -164,15 +188,22 @@ class Task(BaseModel):
         name = PurePosixPath(path).name
         if name.startswith(".env") or name in ["app.env", "agents.env", ".pgpass"]:
             raise PermissionError("secret environment paths are operator-owned")
-        forbidden = [*PROTECTED, *self.forbidden_paths]
+        forbidden = [*self.protected_scope(), *self.forbidden_paths]
         if self.phase.startswith("phase_0"):
             forbidden += PHASE_ZERO
         if any(inside(path, p) for p in forbidden):
             raise PermissionError("forbidden task path")
-        # Every report is owned independently, even when writer allowed_paths is broad.
+        # Every role report stays independently owned. Only the phase 0
+        # foundation bootstrap may own explicitly assigned non-report artifacts,
+        # because it must author its own engineering-governance records.
         if (
             inside(path, "ops/reports")
             and path != f"ops/reports/{self.task_id}/{REPORTS.get(role)}"
+            and not (
+                self.foundation_bootstrap
+                and name not in REPORTS.values()
+                and any(inside(path, allowed) for allowed in self.allowed_paths)
+            )
         ):
             raise PermissionError("report belongs to another role")
         if not any(inside(path, p) for p in self.allowed_for(role)):

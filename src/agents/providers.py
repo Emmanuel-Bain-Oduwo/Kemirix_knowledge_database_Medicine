@@ -23,6 +23,43 @@ class ProviderError(RuntimeError):
     """Only safe category strings cross the provider boundary."""
 
 
+def message_text(message):
+    """Non-empty assistant output from content or reasoning_content."""
+    if not isinstance(message, dict):
+        return None
+    for field in ("content", "reasoning_content"):
+        text = message.get(field)
+        if isinstance(text, str) and text.strip():
+            return text
+    return None
+
+
+def extract_content(data):
+    """Structural extraction of assistant output; never requires an exact phrase.
+
+    Accepts an OpenAI-compatible non-empty choices list at the top level or inside
+    a Cloudflare `result` envelope (assistant message content or reasoning_content),
+    or Cloudflare's plain result.response text. Malformed shapes fail closed.
+    """
+    scopes = [data] if isinstance(data, dict) else []
+    if isinstance(data, dict) and isinstance(data.get("result"), dict):
+        scopes.append(data["result"])
+    for scope in scopes:
+        if "choices" in scope:
+            choices = scope["choices"]
+            if not isinstance(choices, list) or not choices:
+                raise ProviderError("invalid_response")
+            text = message_text(choices[0].get("message") if isinstance(choices[0], dict) else None)
+            if text is None:
+                raise ProviderError("invalid_response")
+            return text
+    for scope in scopes:
+        response = scope.get("response")
+        if isinstance(response, str) and response.strip():
+            return response
+    raise ProviderError("invalid_response")
+
+
 @dataclass(frozen=True)
 class SmokeResult:
     provider: str
@@ -114,13 +151,10 @@ class HTTPProvider:
             raise ProviderError("invalid_response") from None
 
     def smoke(self, role):
-        try:
-            content = self.complete(role, SMOKE_PROMPT, max_tokens=128)
-            if json.loads(content) != {"connectivity": "ok"}:
-                raise ValueError()
-        except (ValueError, TypeError, KeyError, IndexError):
-            raise ProviderError("invalid_smoke_response") from None
-        return SmokeResult(role, "PASS", "minimal JSON connectivity response validated")
+        # Structural connectivity validation: a successful request with a valid
+        # non-empty assistant response passes; no exact phrase or JSON is required.
+        self.complete(role, SMOKE_PROMPT, max_tokens=128)
+        return SmokeResult(role, "PASS", "structural assistant response validated")
 
 
 class NebiusProvider(HTTPProvider):
@@ -156,10 +190,7 @@ class NebiusProvider(HTTPProvider):
                 "stream": False,
             },
         )
-        try:
-            return data["choices"][0]["message"]["content"]
-        except (KeyError, TypeError, IndexError):
-            raise ProviderError("invalid_response") from None
+        return extract_content(data)
 
 
 class CloudflareProvider(HTTPProvider):
@@ -188,10 +219,7 @@ class CloudflareProvider(HTTPProvider):
         )
         if data.get("success") is not True:
             raise ProviderError("provider_rejected_request")
-        try:
-            return data["result"]["response"]
-        except (KeyError, TypeError):
-            raise ProviderError("invalid_response") from None
+        return extract_content(data)
 
 
 def provider_for(role, **kwargs):

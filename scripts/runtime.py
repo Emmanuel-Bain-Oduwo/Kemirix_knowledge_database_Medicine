@@ -188,8 +188,8 @@ def deploy(repo, root, sha, rollback=False):
         if (root / "current").exists() and not (root / "DEPLOYED_SHA").is_file():
             raise RuntimeError("RUNTIME DRIFT DETECTED")
         git(repo, "fetch", "origin", sha)
-        git(repo, "fetch", "origin", "develop:refs/remotes/origin/develop")
-        git(repo, "merge-base", "--is-ancestor", sha, "refs/remotes/origin/develop")
+        git(repo, "fetch", "origin", "main:refs/remotes/origin/main")
+        git(repo, "merge-base", "--is-ancestor", sha, "refs/remotes/origin/main")
         previous = (
             (root / "DEPLOYED_SHA").read_text().strip()
             if (root / "DEPLOYED_SHA").exists()

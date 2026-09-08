@@ -1,7 +1,7 @@
 """Bounded canonical context; external research is untrusted input."""
 
 from .memory import CANONICAL
-from .models import PHASE_ZERO, PROTECTED, REPORTS
+from .models import PHASE_ZERO, REPORTS
 from .security import ensure_no_secrets, safe_repo_path
 from .tasks import load_task
 
@@ -20,7 +20,7 @@ def build_context(root, task_id, role, code_paths=(), max_bytes=180_000, code_ro
         else "own_report_only",
         "ALLOWED_PATHS": task.allowed_for(role),
         "FORBIDDEN_PATHS": [
-            *PROTECTED,
+            *task.protected_scope(),
             *task.forbidden_paths,
             *(PHASE_ZERO if task.phase.startswith("phase_0") else []),
         ],

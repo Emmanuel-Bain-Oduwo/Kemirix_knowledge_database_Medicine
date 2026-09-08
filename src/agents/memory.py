@@ -69,6 +69,7 @@ def atomic_text(path, text):
 def writer_lock(root):
     # One control checkout for all worktrees: lock serializes state and gated writes.
     lock = safe_repo_path(root, "ops/.coordinator.lock")
+    lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("a") as handle:
         try:
             fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
