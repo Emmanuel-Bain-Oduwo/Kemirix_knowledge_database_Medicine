@@ -22,6 +22,12 @@ TABLES = [
 ]
 
 
+def table_block(table):
+    match = re.search(rf"CREATE TABLE {re.escape(table)} \((.*?)\n\);", SQL, re.DOTALL)
+    assert match, f"missing CREATE TABLE {table}"
+    return match.group(1)
+
+
 def test_migration_suite_executes_only_kmx_prefix():
     ready, pending = plan(ROOT)
     assert ready == ["migrations/001_kmx.sql"]
@@ -90,50 +96,116 @@ def test_registry_level_prefix_binding():
     ):
         assert f"level = '{level}'" in SQL
         assert f"kmx_id LIKE '{prefix}%'" in SQL
-    assert "UNIQUE (kmx_id, level)" in SQL
+    assert "PRIMARY KEY (kmx_id)" in SQL
     assert "level IN ('ingredient', 'clinical_drug', 'product')" in SQL
     assert "status IN ('active', 'retired')" in SQL
     assert "length(btrim(preferred_name)) > 0" in SQL
+    registry = table_block("kmx.registry")
+    # Approved registry contract: kmx_id alone is the identity; level is bound
+    # by the prefix check, not by a composite unique key.
+    assert "normalized_name" in registry
+    assert "updated_at" in registry
+    assert "UNIQUE" not in registry
 
 
-def test_contains_level_order_allows_only_downward_edges():
-    assert "UNIQUE (kmx_id, level)" in SQL
-    assert "(parent_level = 'ingredient' AND child_level = 'clinical_drug')" in SQL
-    assert "(parent_level = 'clinical_drug' AND child_level = 'product')" in SQL
-    assert "PRIMARY KEY (parent_kmx_id, child_kmx_id)" in SQL
-    assert "REFERENCES kmx.registry (kmx_id, level)" in SQL
-    assert "CREATE INDEX contains_child_idx ON kmx.contains (child_kmx_id)" in SQL
+def test_contains_uses_container_member_model():
+    contains = table_block("kmx.contains")
+    assert "container_kmx_id" in contains
+    assert "member_kmx_id" in contains
+    assert "relationship_type" in contains
+    assert "ordinal           integer" in contains
+    assert "PRIMARY KEY (container_kmx_id, member_kmx_id, relationship_type)" in contains
+    assert "CHECK (container_kmx_id <> member_kmx_id)" in contains
+    assert "FOREIGN KEY (container_kmx_id) REFERENCES kmx.registry (kmx_id)" in contains
+    assert "FOREIGN KEY (member_kmx_id) REFERENCES kmx.registry (kmx_id)" in contains
+    assert "CREATE INDEX contains_member_idx ON kmx.contains (member_kmx_id)" in SQL
+    # Parent/child wording is retired: containers hold members, and legal
+    # combinations are application-validated (owner-approved blueprint 6.2).
+    for banned in ("parent_kmx_id", "child_kmx_id", "parent_level", "child_level"):
+        assert banned not in SQL
 
 
-def test_external_identifier_single_binding():
-    assert "UNIQUE (source_id, external_id_type, external_id)" in SQL
-    assert "REFERENCES kmx.registry (kmx_id)" in SQL
-    pattern = re.search(r"source_id ~ '([^']+)'", SQL).group(1)
-    assert pattern == "^S(0[1-9]|1[0-9]|2[0-7])$"
-    for valid in ("S01", "S09", "S15", "S27"):
+def test_external_identifier_conflicts_remain_recordable():
+    external = table_block("kmx.external_identifier")
+    assert "UNIQUE (kmx_id, identifier_system, identifier_value)" in external
+    # A source identifier pointing at two different KMX rows stays recordable
+    # so the conflict is preserved as a mapping exception (fail closed),
+    # never hidden by a global database-level unique binding.
+    assert "UNIQUE (source_id" not in external
+    assert re.search(r"UNIQUE \((?!kmx_id, identifier_system)", external) is None
+    assert "jurisdiction" in external
+    assert "active" in external
+    assert "identifier_system" in external
+    assert "identifier_value" in external
+    pattern = re.search(r"source_id ~ '([^']+)'", external).group(1)
+    assert pattern == "^[a-z][a-z0-9_]*$"
+    for valid in ("dailymed", "rxnorm_athena", "ppb_smpc", "chembl"):
         assert re.fullmatch(pattern, valid)
-    for invalid in ("S00", "S28", "S1", "S001", "s01", "S", "S1x"):
+    for invalid in ("S06", "DailyMed", "dailymed-", "6dailymed", "", "daily med"):
         assert not re.fullmatch(pattern, invalid)
 
 
 def test_name_index_is_lookup_only():
-    assert "PRIMARY KEY (name, name_type, kmx_id)" in SQL
-    assert "name_type IN ('preferred', 'synonym')" in SQL
-    assert "REFERENCES kmx.registry (kmx_id)" in SQL
-    assert not re.search("name_index.*GENERATED", SQL)
+    name_index = table_block("kmx.name_index")
+    assert "name_index_id" in name_index
+    assert "normalized_name" in name_index
+    assert "language" in name_index
+    assert "DEFAULT 'en'" in name_index
+    assert "source_id" in name_index
+    assert "PRIMARY KEY (name_index_id)" in name_index
+    assert "FOREIGN KEY (kmx_id) REFERENCES kmx.registry (kmx_id)" in name_index
+    assert "CREATE INDEX name_index_normalized_name_idx ON kmx.name_index (normalized_name)" in SQL
+    # A pure lookup aid never mints identity: no uniqueness on names, so one
+    # name may legitimately map to several KMX rows.
+    assert "UNIQUE" not in name_index
 
 
-def test_mapping_exception_preserves_conflicts():
-    assert "reason IN ('zero_match', 'multiple_match', 'conflict')" in SQL
-    assert "status IN ('open', 'under_review', 'resolved')" in SQL
-    assert "(status = 'resolved') = (resolved_at IS NOT NULL)" in SQL
-    assert "detail               jsonb       NOT NULL" in SQL
-    assert "resolution_kmx_id" in SQL
-    assert re.search(
-        r"source_id IS NOT NULL\s*\n\s*OR external_id IS NOT NULL"
-        r"\s*\n\s*OR length\(btrim\(coalesce\(name_text, ''\)\)\) > 0",
-        SQL,
-    )
+def test_mapping_exception_preserves_full_provenance():
+    exception = table_block("kmx.mapping_exception")
+    for column in (
+        "lane_id",
+        "source_id",
+        "source_version_key",
+        "source_record_key",
+        "reason_code",
+        "normalized_input",
+        "candidate_kmx_ids",
+        "status",
+        "reviewed_at",
+        "reviewed_by",
+    ):
+        assert column in exception
+    assert "DEFAULT '[]'::jsonb" in exception
+    lane = re.search(r"lane_id ~ '([^']+)'", exception).group(1)
+    assert lane == "^S(0[1-9]|1[0-9]|2[0-7])$"
+    for valid in ("S01", "S06", "S15", "S27"):
+        assert re.fullmatch(lane, valid)
+    for invalid in ("S00", "S28", "S6", "S001", "s06", "", "dailymed"):
+        assert not re.fullmatch(lane, invalid)
+    assert "'NO_MATCH'" in exception
+    assert "'MULTIPLE_MATCHES'" in exception
+    assert "'IDENTIFIER_CONFLICT'" in exception
+    assert "'FORMULATION_AMBIGUITY'" in exception
+    assert "'PRODUCT_IDENTITY_UNPROVEN'" in exception
+    assert "status IN ('open', 'resolved', 'dismissed')" in exception
+    assert "status <> 'resolved'" in exception
+    assert "reviewed_at IS NOT NULL AND reviewed_by IS NOT NULL" in exception
+    for retired in ("zero_match", "multiple_match", "resolution_kmx_id", "resolved_at"):
+        assert retired not in exception
+
+
+def test_migration_001_is_independent_of_evidence_tables():
+    # Plain provenance columns only: no evidence/rules schema references and
+    # no cross-schema foreign keys from migration 001 to future migrations.
+    for forbidden in (
+        "evidence.",
+        "rules.",
+        "CREATE SCHEMA evidence",
+        "CREATE SCHEMA rules",
+        "REFERENCES evidence",
+        "REFERENCES rules",
+    ):
+        assert forbidden not in SQL
 
 
 def test_migration_suite_declaration_matches_config():

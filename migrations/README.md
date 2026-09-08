@@ -9,8 +9,15 @@ Order and state:
 
 1. `001_kmx.sql` — executable (KMX-SCHEMA-001). Creates the `kmx` schema:
    `registry`, `contains`, `external_identifier`, `name_index`,
-   `mapping_exception` with KMX-ID format/level constraints, combination-safe
-   containment and deterministic external-identifier binding.
+   `mapping_exception` per the owner-approved blueprints (2026-09-08).
+   Containment uses `container_kmx_id`/`member_kmx_id`/`relationship_type`/
+   `ordinal` (a combination clinical drug contains ingredient members; a
+   product contains a clinical drug). `lane_id` (S01–S27 architecture lane) is
+   deliberately separate from `source_id` (stable implementation slug such as
+   `dailymed`). External-identifier conflicts stay recordable — there is no
+   global unique binding — so they fail closed into `kmx.mapping_exception`
+   with full source/version/record/reason/candidate/review provenance.
+   Migration 001 stays independent of the future Evidence tables.
 2. `002_evidence.sql` — pending placeholder.
 3. `003_rules.sql` — pending placeholder.
 
