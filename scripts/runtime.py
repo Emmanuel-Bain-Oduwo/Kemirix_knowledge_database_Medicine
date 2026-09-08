@@ -13,9 +13,11 @@ import tarfile
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 DEFAULT_ROOT = Path("/srv/kemirix/runtime/development")
 DEFAULT_REPO = Path("/srv/kemirix/deploy/repository.git")
+DEV_DB_ENV_FILE = Path("/srv/kemirix/secrets/dev-postgres.env")
 
 
 def command(args, **kwargs):
@@ -121,6 +123,152 @@ def smoke(release):
         cwd=release,
         env=env,
         timeout=60,
+    )
+
+
+def dev_database_env(path=None):
+    """Operator-provisioned development database credentials, or None when absent.
+
+    Only a regular, non-symlink 0600 file owned by the deploying user holding a
+    postgres:// or postgresql:// DATABASE_URL is accepted. The URL is parsed
+    in-process into PG* variables; the password never reaches a command line,
+    log or error.
+    """
+    if path is None:
+        path = DEV_DB_ENV_FILE
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    if path.is_symlink() or not path.is_file():
+        return None
+    if stat.S_IMODE(info.st_mode) & 0o077:
+        raise RuntimeError("unsafe development credential file permissions")
+    if info.st_uid != os.getuid():
+        raise RuntimeError("development credential file ownership mismatch")
+    url = None
+    for line in path.read_text().splitlines():
+        if line.startswith("DATABASE_URL="):
+            url = line.split("=", 1)[1].strip().strip("'\"").strip()
+    if not url:
+        return None
+    parsed = urlsplit(url)
+    if (
+        parsed.scheme not in ("postgres", "postgresql")
+        or not parsed.hostname
+        or not parsed.username
+        or parsed.password is None
+        or not parsed.path.lstrip("/")
+    ):
+        raise RuntimeError("invalid development database credential format")
+    env = {
+        "PGHOST": parsed.hostname,
+        "PGUSER": parsed.username,
+        "PGPASSWORD": parsed.password,
+        "PGDATABASE": parsed.path.lstrip("/"),
+    }
+    if parsed.port:
+        env["PGPORT"] = str(parsed.port)
+    query = parse_qs(parsed.query)
+    env["PGSSLMODE"] = query["sslmode"][0] if "sslmode" in query else "require"
+    return env
+
+
+def psql(pg_env, *args, timeout=60):
+    """Run psql with a minimal environment; never echo credentials or bodies."""
+    result = subprocess.run(
+        ["psql", "-XAt", "--set=ON_ERROR_STOP=1", *args],
+        capture_output=True,
+        env={"PATH": "/usr/local/bin:/usr/bin:/bin", "LC_ALL": "C", **pg_env},
+        timeout=timeout,
+        check=False,
+    )
+    if result.returncode:
+        raise RuntimeError("development database operation failed; details suppressed")
+    return result.stdout.decode().strip()
+
+
+def ready_prefix(release):
+    """Ready migration files from the release's own reviewed migration gate."""
+    output = command(
+        [
+            str(release / ".venv/bin/python"),
+            "-c",
+            "import json,sys;from pathlib import Path;"
+            "sys.path.insert(0,'.');"
+            "from scripts.migration_gate import plan;"
+            "json.dump(plan(Path.cwd()),sys.stdout)",
+        ],
+        cwd=release,
+        timeout=60,
+    )
+    ready, _pending = json.loads(output)
+    return list(ready)
+
+
+def expected_tables(release, ready):
+    """schema-qualified tables the ready migration files create."""
+    tables = []
+    for relative in ready:
+        text = (release / relative).read_text()
+        tables += re.findall(r"CREATE TABLE\s+([a-z_]+\.[a-z_]+)\s*\(", text, re.IGNORECASE)
+    return tables
+
+
+def execute_development_migrations(release):
+    """Apply or verify the executable migration prefix on the development database.
+
+    This is the separately approved development migration execution: credentials
+    come only from the operator-provisioned env file, the server must be
+    PostgreSQL 17, the prefix applies from zero in one transaction, an already
+    applied prefix verifies idempotently, and every other state fails closed.
+    Multi-migration upgrades require the DATABASE-001 migration runner.
+    """
+    pg_env = dev_database_env()
+    if pg_env is None:
+        raise RuntimeError(
+            "development migration hook requires operator-provisioned credentials "
+            f"at {DEV_DB_ENV_FILE} (0600, owner-only)"
+        )
+    version = int(psql(pg_env, "-c", "SHOW server_version_num"))
+    if not 170000 <= version < 180000:
+        raise RuntimeError("development database must be PostgreSQL 17")
+    non_system = psql(
+        pg_env,
+        "-c",
+        "SELECT count(*) FROM information_schema.tables "
+        "WHERE table_schema NOT IN ('pg_catalog','information_schema')",
+    )
+    domain_schemas = psql(
+        pg_env,
+        "-c",
+        "SELECT count(*) FROM information_schema.schemata "
+        "WHERE schema_name IN ('kmx','evidence','rules')",
+    )
+    ready = ready_prefix(release)
+    if domain_schemas != "0":
+        if len(ready) > 1:
+            raise RuntimeError(
+                "multi-migration development upgrade requires the DATABASE-001 migration runner"
+            )
+        present = set(
+            psql(
+                pg_env,
+                "-c",
+                "SELECT table_schema||'.'||table_name FROM information_schema.tables "
+                "WHERE table_schema IN ('kmx','evidence','rules')",
+            ).split()
+        )
+        if present != set(expected_tables(release, ready)):
+            raise RuntimeError("development migration state does not match the executable prefix")
+        return
+    if non_system != "0":
+        raise RuntimeError("development database is not empty; refusing from-zero migration")
+    psql(
+        pg_env,
+        "--single-transaction",
+        *[f"--file={release / relative}" for relative in ready],
+        timeout=120,
     )
 
 
@@ -240,9 +388,10 @@ def deploy(repo, root, sha, rollback=False):
                 timeout=30,
             )
             if "state: executable" in (release / "config/migration_suite.yaml").read_text():
-                raise RuntimeError(
-                    "development migration hook requires a separately approved implementation"
-                )
+                # Separately approved development migration execution: apply or
+                # verify the executable prefix against the development database
+                # using only operator-provisioned credentials; fails closed.
+                execute_development_migrations(release)
             atomic(manifest, json.dumps(inventory(release), sort_keys=True) + "\n")
             for path in release.rglob("*"):
                 if not path.is_symlink():

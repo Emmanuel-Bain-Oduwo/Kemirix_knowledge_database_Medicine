@@ -90,6 +90,7 @@ class Task(BaseModel):
     base_sha: str = Field(pattern=r"^[0-9a-f]{40}$")
     branch: str
     research_required: bool = True
+    owner_approved_skill_update: bool = False
     acceptance_criteria: list[str] = Field(min_length=1)
     required_tests: list[Literal["foundation", "integration", "contract"]] = Field(min_length=1)
     status: str
@@ -142,7 +143,18 @@ class Task(BaseModel):
         if self.created_at.tzinfo is None or self.updated_at.tzinfo is None:
             raise ValueError("timezone required")
         for allowed in self.allowed_paths:
-            if any(inside(allowed, p) or inside(p, allowed) for p in self.protected_scope()):
+            conflicts = [
+                p for p in self.protected_scope() if inside(allowed, p) or inside(p, allowed)
+            ]
+            # The only sanctioned governance-scope expansion: an explicit
+            # owner-approved SKILL.md synchronization through a phase_0
+            # FOUNDATION bootstrap task. Every other task keeps full protection.
+            if conflicts and not (
+                self.owner_approved_skill_update
+                and self.foundation_bootstrap
+                and allowed == "SKILL.md"
+                and conflicts == ["SKILL.md"]
+            ):
                 raise ValueError("task cannot own governance or broad repository scope")
             if self.phase.startswith("phase_0") and any(
                 inside(allowed, p) or inside(p, allowed) for p in PHASE_ZERO
@@ -188,11 +200,19 @@ class Task(BaseModel):
         name = PurePosixPath(path).name
         if name.startswith(".env") or name in ["app.env", "agents.env", ".pgpass"]:
             raise PermissionError("secret environment paths are operator-owned")
-        forbidden = [*self.protected_scope(), *self.forbidden_paths]
-        if self.phase.startswith("phase_0"):
-            forbidden += PHASE_ZERO
-        if any(inside(path, p) for p in forbidden):
+        # Explicit forbidden paths always win, including for SKILL.md tasks.
+        if any(inside(path, p) for p in self.forbidden_paths):
             raise PermissionError("forbidden task path")
+        protected = [*self.protected_scope()]
+        if self.phase.startswith("phase_0"):
+            protected += PHASE_ZERO
+        if any(inside(path, p) for p in protected):
+            if not (
+                self.owner_approved_skill_update
+                and self.foundation_bootstrap
+                and path == "SKILL.md"
+            ):
+                raise PermissionError("forbidden task path")
         # Every role report stays independently owned. Only the phase 0
         # foundation bootstrap may own explicitly assigned non-report artifacts,
         # because it must author its own engineering-governance records.

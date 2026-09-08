@@ -104,6 +104,84 @@ def test_invalid_tasks_fail_closed(task, mutation):
         Task.model_validate({**task.model_dump(), **mutation})
 
 
+def _skill_task(**overrides):
+    stamp = datetime.now(timezone.utc)
+    data = {
+        "task_id": "FOUNDATION-SKILL-SYNC-001",
+        "phase": "phase_0",
+        "goal": "Owner-approved SKILL.md synchronization fixture",
+        "production_writer": "glm",
+        "active_writer": "glm",
+        "writer_priority": PRIORITY,
+        "allowed_paths": ["SKILL.md"],
+        "forbidden_paths": ["migrations", "src/kmx", "src/evidence", "src/rules", "src/sources"],
+        "base_sha": SHA,
+        "branch": "agent/glm/FOUNDATION-SKILL-SYNC-001",
+        "acceptance_criteria": ["SKILL.md matches the owner-approved blueprint"],
+        "required_tests": ["foundation"],
+        "status": "implementation",
+        "created_at": stamp,
+        "updated_at": stamp,
+        "completed_at": None,
+        "commit_sha": SHA,
+        "deployed_sha": None,
+        "owner_approved_skill_update": True,
+    }
+    data.update(overrides)
+    return Task.model_validate(data)
+
+
+def test_skill_update_requires_explicit_owner_approval():
+    with pytest.raises(ValidationError):
+        _skill_task(owner_approved_skill_update=False)
+
+
+def test_skill_update_allowed_for_owner_approved_foundation_task():
+    task = _skill_task()
+    assert task.authorize("glm", "SKILL.md") == "SKILL.md"
+
+
+def test_skill_update_rejected_for_non_foundation_phase():
+    with pytest.raises(ValidationError):
+        _skill_task(phase="phase_1", task_id="DOMAIN-CONTRACT-001")
+
+
+def test_skill_update_forbidden_paths_still_win():
+    task = _skill_task(forbidden_paths=["SKILL.md"])
+    with pytest.raises(PermissionError):
+        task.authorize("glm", "SKILL.md")
+
+
+def test_skill_update_does_not_open_other_governance_paths():
+    # A phase_0 task that is not the FOUNDATION bootstrap keeps full protection
+    # even with the flag: the exception requires phase_0 + FOUNDATION- prefix
+    # + matching branch + the explicit owner-approved flag together.
+    stamp = datetime.now(timezone.utc)
+    data = {
+        "task_id": "TEST-001",
+        "phase": "phase_0f",
+        "goal": "Non-bootstrap phase_0 fixture",
+        "production_writer": "glm",
+        "active_writer": "glm",
+        "writer_priority": PRIORITY,
+        "allowed_paths": ["tests/fixtures/engineering.txt"],
+        "forbidden_paths": ["migrations", "src/kmx"],
+        "base_sha": SHA,
+        "branch": "agent/glm/TEST-001",
+        "acceptance_criteria": ["fixture valid"],
+        "required_tests": ["foundation"],
+        "status": "implementation",
+        "created_at": stamp,
+        "updated_at": stamp,
+        "completed_at": None,
+        "commit_sha": SHA,
+        "deployed_sha": None,
+        "owner_approved_skill_update": True,
+    }
+    with pytest.raises(ValidationError):
+        Task.model_validate({**data, "allowed_paths": ["SKILL.md"]})
+
+
 def test_missing_task_field(task):
     data = task.model_dump()
     del data["required_tests"]

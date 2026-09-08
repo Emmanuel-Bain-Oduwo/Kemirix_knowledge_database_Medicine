@@ -226,11 +226,23 @@ files.
 
 Migration files are versioned in Git and become immutable once released. Correct
 a released schema using a new migration, never by silently rewriting history. CI
-rehearses from empty PostgreSQL 17. Development migration execution may be added
-only after CI validation and separate review; the current hook explicitly refuses
-executable domain migrations until implemented. Destructive migrations require
-explicit data/recovery handling and human approval. Production migration requires
-human release approval. Clinical Evidence approval/knowledge activation is always
-separate from code delivery.
+rehearses from empty PostgreSQL 17. The separately reviewed development migration
+execution is implemented (FOUNDATION-CD-AND-SKILL-001): when a release declares
+an executable migration, the deploy applies the ready prefix against the
+development database from zero in a single transaction, or verifies the already
+applied table inventory idempotently. Credentials come only from the
+operator-provisioned `/srv/kemirix/secrets/dev-postgres.env` (0600, owner-only,
+`DATABASE_URL` parsed in-process into `PG*` variables and never placed on command
+lines or logs); a missing or unsafe file fails the deployment closed exactly like
+the previous refusal. Upgrades across multiple executable migrations require the
+DATABASE-001 migration runner and are refused until it exists. Destructive
+migrations require explicit data/recovery handling and human approval. Production
+migration requires human release approval. Clinical Evidence approval/knowledge
+activation is always separate from code delivery.
+
+To deploy an earlier main SHA with the current trusted runner (for example after
+re-enabling deferred deployments), extract `scripts/runtime.py` from a trusted
+merged main SHA and invoke `python3 <runner> deploy <sha>`; the same stale-release
+and ancestry protections apply.
 
 References: [GitHub workflow_run behavior/security](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run), [PostgreSQL services](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers), [setup-uv](https://github.com/astral-sh/setup-uv/tree/v6).
