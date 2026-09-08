@@ -1,5 +1,5 @@
-# Frozen Rule contract (DOMAIN-CONTRACT-001, owner-approved SKILL v5.0
-# sections 13/14 and the execution book section 8).
+# Frozen Rule contract (DOMAIN-CONTRACT-001 + PHASE1-2-CONTRACT-HARDENING-001,
+# owner-approved SKILL v5.0 sections 13/14 and execution book section 8).
 rule_contract:
   outcomes:
     - MATCH
@@ -8,6 +8,7 @@ rule_contract:
   outcome_rules:
     - "missing required patient data returns CANNOT_FULLY_EVALUATE, never NO_MATCH"
     - "wrong formulation or product returns NO_MATCH for clinical drug/product Rules"
+    - "all trigger conditions satisfied returns MATCH"
   eligibility:
     - "Rules are created only from approved, eligible, executable Evidence"
     - "only primary regulatory/guideline Evidence may create Rules"
@@ -22,6 +23,68 @@ rule_contract:
       - "inheritance is immutable: target KMX, level, category and jurisdiction copy the approved Evidence"
       - "the Rule builder never resolves medicine identity again"
       - "supporting biomedical sources never independently change high-stakes clinical action; they may only support explanation fields"
+  # Structural field contracts (frozen; the 17-part approved logical Rule):
+  clinical_rule:
+    required_fields:
+      - rule_id
+      - target_kmx_id
+      - target_level
+      - category
+      - jurisdiction
+      - patient_trigger
+      - required_patient_data
+      - verdict
+      - verdict_reason
+      - severity
+      - severity_reason
+      - immediate_action
+      - action_reason
+      - recommendation
+      - recommendation_reason
+      - alternatives
+      - risk_factors
+      - monitoring
+      - follow_up
+      - status
+      - created_at
+      - updated_at
+      - reviewed_at
+      - reviewed_by
+    field_semantics:
+      patient_trigger: "the patient condition/trigger that activates the Rule"
+      required_patient_data: "every trigger input the evaluator needs; missing required data means CANNOT_FULLY_EVALUATE"
+      verdict: "the clinical verdict for a MATCH evaluation"
+      alternatives: "only when supported by connected approved Evidence"
+      risk_factors: "patient-specific risk factors with reasons, only when evidence-backed"
+      monitoring: "monitoring with why/when, only when evidence-backed"
+      follow_up: "follow-up with why/when, only when evidence-backed"
+      status: "Rule lifecycle status; activation requires human clinical review"
+      reviewed_by: "human clinical reviewer; a model never clinically approves a Rule"
+  rule_evidence:
+    required_fields:
+      - rule_id
+      - evidence_id
+      - support_role
+      - supports_fields
+      - ordinal
+    field_semantics:
+      support_role: "which Evidence package fills which Rule role"
+      supports_fields: "which Rule fields this Evidence supports (trigger/verdict/action/recommendation/monitoring/explanation)"
+    rules:
+      - "primary regulatory Evidence controls executable clinical action"
+      - "supporting Evidence may support explanation but cannot independently change the action"
+  rule_test:
+    required_fields:
+      - test_id
+      - rule_id
+      - test_name
+      - patient_fixture
+      - expected_outcome
+      - expected_decision_fields
+      - active
+    field_semantics:
+      expected_outcome: "exactly one of MATCH, NO_MATCH, CANNOT_FULLY_EVALUATE"
+      patient_fixture: "the synthetic patient input for the test"
   authority_invariants:
     - "S07 openfda_label is a structured projection of duplicate upstream label content and is never an independent clinical vote over that content"
     - "S11 knmf remains authority-gated until an approved official copy and rights status are pinned"
@@ -30,3 +93,34 @@ rule_contract:
     - "S16-S24 supporting lanes never independently create prescribing authority"
     - "S26 ema and S27 mhra are regulatory primary lanes when their Evidence is executable"
     - "duplicate projections of the same upstream label/document are not independent clinical votes"
+  # One canonical frozen representation of the exact owner-approved rule
+  # policy per lane (SKILL v5.0 section 7 / docs/SOURCE_MATRIX.md). Configs
+  # must match exactly; any other value is authority drift and fails.
+  source_rule_policies:
+    S01: false
+    S02: false
+    S03: false
+    S04: false
+    S05: false
+    S06: true
+    S07: false
+    S08: false
+    S09: true
+    S10: false
+    S11: executable_recommendations_only
+    S12: true
+    S13: actionable guidance only
+    S14: explicit_computable_recommendations_only
+    S15: guideline_recommendations
+    S16: false
+    S17: false
+    S18: false
+    S19: false_initially
+    S20: false
+    S21: false
+    S22: false
+    S23: false
+    S24: false
+    S25: false
+    S26: true
+    S27: true

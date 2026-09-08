@@ -6,11 +6,12 @@ URLs: the model rejects unknown fields outright.
 
 import re
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from kmx.exceptions import ConfigurationError
 
-from .keys import validate_lane_id, validate_source_slug
+from .exceptions import StorageContractError
+from .keys import build_object_key, validate_lane_id, validate_source_slug
 from .models import AcquisitionMode, ParseStatus, RightsStatus
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -114,3 +115,26 @@ class Manifest(BaseModel):
         for artifact in value:
             validate_source_slug(artifact.object_key.split("/")[0])
         return value
+
+    @model_validator(mode="after")
+    def _bind_artifact_lineage(self):
+        """Every artifact key is exactly its manifest provenance.
+
+        The artifact alone does not know the parent manifest provenance, so the
+        binding lives here: source_id, source_version, source_record_key and the
+        artifact's own original_filename must assemble the deterministic key.
+        A mismatch fails closed and is never silently rewritten.
+        """
+        for artifact in self.artifacts:
+            expected = build_object_key(
+                self.source_id,
+                self.source_version,
+                self.source_record_key,
+                artifact.original_filename,
+            )
+            if artifact.object_key != expected:
+                raise StorageContractError(
+                    "artifact object_key does not match manifest provenance: "
+                    f"expected {expected!r}, got {artifact.object_key!r}"
+                )
+        return self

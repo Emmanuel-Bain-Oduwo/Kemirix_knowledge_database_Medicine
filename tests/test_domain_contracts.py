@@ -1,10 +1,14 @@
-"""Phase 1 domain contract validation (DOMAIN-CONTRACT-001).
+"""Phase 1 domain contract validation (DOMAIN-CONTRACT-001 + PHASE1-2-CONTRACT-HARDENING-001).
 
 Proves the frozen contracts for all 27 approved source lanes against the
-owner-approved blueprints of 2026-09-08 (SKILL v5.0, execution book).
+owner-approved blueprints of 2026-09-08 (SKILL v5.0, execution book), plus the
+hardened exact-per-lane Rule authority policies, the full structural Rule
+contract, manifest forbidden-field key inspection, Object Storage docs
+consistency and the six-table non-executable Evidence placeholder.
 """
 
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -58,35 +62,37 @@ APPROVED_REGISTRY = {
     27: "mhra",
 }
 
-# Owner-approved authority matrix (SKILL v5.0 section 7).
+# Owner-approved authority matrix (SKILL v5.0 section 7). KMX capability is
+# checked here; the per-lane Rule policy lives in exactly one canonical
+# frozen representation, rule_contract.yaml source_rule_policies.
 APPROVED_AUTHORITY = {
-    1: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": False},
-    2: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": False},
-    3: {"kmx_levels": {"ingredient"}, "rules": False},
-    4: {"kmx_levels": {"ingredient"}, "rules": False},
-    5: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": False},
-    6: {"kmx_levels": {"ingredient", "clinical_drug", "product"}, "rules": True},
-    7: {"kmx_levels": {"ingredient", "clinical_drug", "product"}, "rules": False},
-    8: {"kmx_levels": {"ingredient", "clinical_drug", "product"}, "rules": False},
-    9: {"kmx_levels": {"ingredient", "clinical_drug", "product"}, "rules": True},
-    10: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": False},
-    11: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": "gated"},
-    12: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": True},
-    13: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": "guidance_only"},
-    14: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": "computable_only"},
-    15: {"kmx_levels": {"ingredient"}, "rules": True},
-    16: {"kmx_levels": {"ingredient"}, "rules": False},
-    17: {"kmx_levels": {"ingredient"}, "rules": False},
-    18: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": False},
-    19: {"kmx_levels": {"ingredient"}, "rules": "not_general_v1"},
-    20: {"kmx_levels": {"ingredient"}, "rules": False},
-    21: {"kmx_levels": {"ingredient"}, "rules": False},
-    22: {"kmx_levels": {"ingredient"}, "rules": False},
-    23: {"kmx_levels": {"ingredient"}, "rules": False},
-    24: {"kmx_levels": {"ingredient"}, "rules": False},
-    25: {"kmx_levels": {"ingredient", "clinical_drug"}, "rules": False},
-    26: {"kmx_levels": {"ingredient", "clinical_drug", "product"}, "rules": True},
-    27: {"kmx_levels": {"ingredient", "clinical_drug", "product"}, "rules": True},
+    1: {"ingredient", "clinical_drug"},
+    2: {"ingredient", "clinical_drug"},
+    3: {"ingredient"},
+    4: {"ingredient"},
+    5: {"ingredient", "clinical_drug"},
+    6: {"ingredient", "clinical_drug", "product"},
+    7: {"ingredient", "clinical_drug", "product"},
+    8: {"ingredient", "clinical_drug", "product"},
+    9: {"ingredient", "clinical_drug", "product"},
+    10: {"ingredient", "clinical_drug"},
+    11: {"ingredient", "clinical_drug"},
+    12: {"ingredient", "clinical_drug"},
+    13: {"ingredient", "clinical_drug"},
+    14: {"ingredient", "clinical_drug"},
+    15: {"ingredient"},
+    16: {"ingredient"},
+    17: {"ingredient"},
+    18: {"ingredient", "clinical_drug"},
+    19: {"ingredient"},
+    20: {"ingredient"},
+    21: {"ingredient"},
+    22: {"ingredient"},
+    23: {"ingredient"},
+    24: {"ingredient"},
+    25: {"ingredient", "clinical_drug"},
+    26: {"ingredient", "clinical_drug", "product"},
+    27: {"ingredient", "clinical_drug", "product"},
 }
 
 APPROVED_CATEGORIES = [
@@ -148,15 +154,100 @@ def test_source_configs_match_owner_approved_registry():
 
 def test_source_authority_matrix_matches_owner_approved_blueprint():
     for name, config in source_configs().items():
-        expected = APPROVED_AUTHORITY[config["lane"]]
-        assert set(config["kmx_levels"]) == expected["kmx_levels"], f"{name}: kmx_levels"
-        rules = config["rules"]
-        if expected["rules"] is True:
-            assert rules is True or isinstance(rules, str), f"{name}: rules must be allowed"
-        elif expected["rules"] is False:
-            assert rules is False or rules == "false_initially", f"{name}: rules must be denied"
-        else:
-            assert isinstance(rules, str) and rules, f"{name}: conditional rule policy required"
+        lane = config["lane"]
+        expected = APPROVED_AUTHORITY[lane]
+        assert set(config["kmx_levels"]) == expected, f"{name}: kmx_levels"
+
+
+def canonical_rule_policies(root=ROOT):
+    """The one canonical frozen per-lane Rule policy map (rule_contract.yaml)."""
+    return yaml.safe_load((root / "config/rule_contract.yaml").read_text())["rule_contract"][
+        "source_rule_policies"
+    ]
+
+
+def _assert_exact_rule_policies(root):
+    """Every S01-S27 config must carry its exact frozen approved Rule policy.
+
+    Exact equality including type: bool lanes accept only true/false and
+    conditional lanes only the one approved conditional string. Any other
+    value (for example "disabled", "false_initially" on a true lane, or an
+    arbitrary string) is authority drift and fails.
+    """
+    policies = canonical_rule_policies(root)
+    assert sorted(policies) == [f"S{lane:02d}" for lane in range(1, 28)], (
+        "exactly 27 frozen rule policies S01-S27 are required"
+    )
+    for path in sorted((root / "config/sources").glob("*.yaml")):
+        config = yaml.safe_load(path.read_text())
+        expected = policies[f"S{config['lane']:02d}"]
+        actual = config["rules"]
+        assert type(actual) is type(expected) and actual == expected, (
+            f"{path.name}: rule policy {actual!r} does not match the frozen "
+            f"approved policy {expected!r} for lane S{config['lane']:02d}"
+        )
+
+
+def test_source_rule_policies_match_frozen_canonical_map():
+    _assert_exact_rule_policies(ROOT)
+
+
+def test_frozen_policy_map_encodes_owner_approved_policies():
+    policies = canonical_rule_policies()
+    assert policies["S06"] is True
+    assert policies["S09"] is True
+    assert policies["S12"] is True
+    assert policies["S26"] is True
+    assert policies["S27"] is True
+    assert policies["S11"] == "executable_recommendations_only"
+    assert policies["S13"] == "actionable guidance only"
+    assert policies["S14"] == "explicit_computable_recommendations_only"
+    assert policies["S15"] == "guideline_recommendations"
+    assert policies["S19"] == "false_initially"
+    assert policies["S07"] is False  # duplicate projection, never an independent vote
+    assert sum(value is False for value in policies.values()) == 17
+
+
+def _copy_config_tree(tmp_path):
+    subprocess.run(["cp", "-r", str(ROOT / "config"), str(tmp_path / "config")], check=True)
+    return tmp_path
+
+
+def _mutate_source(tmp_path, filename, rules):
+    target = tmp_path / "config/sources" / filename
+    data = yaml.safe_load(target.read_text())
+    data["rules"] = rules
+    target.write_text(yaml.safe_dump(data))
+
+
+def test_rule_authority_drift_fails_closed(tmp_path):
+    root = _copy_config_tree(tmp_path)
+    _assert_exact_rule_policies(root)  # the copied tree still matches exactly
+    for drift in ("disabled", "false_initially", "whatever", False):
+        _mutate_source(root, "06_dailymed.yaml", drift)
+        with pytest.raises(AssertionError):
+            _assert_exact_rule_policies(root)
+    _mutate_source(root, "06_dailymed.yaml", True)
+    _assert_exact_rule_policies(root)  # the exact approved policy passes again
+
+
+def test_conditional_policy_drift_fails_closed(tmp_path):
+    root = _copy_config_tree(tmp_path)
+    # S11 is approved only as executable_recommendations_only.
+    for drift in ("disabled", "guideline_recommendations", "whatever", True, False):
+        _mutate_source(root, "11_knmf.yaml", drift)
+        with pytest.raises(AssertionError):
+            _assert_exact_rule_policies(root)
+
+
+def test_canonical_map_drift_fails_closed(tmp_path):
+    root = _copy_config_tree(tmp_path)
+    contract = root / "config/rule_contract.yaml"
+    data = yaml.safe_load(contract.read_text())
+    data["rule_contract"]["source_rule_policies"]["S06"] = "disabled"
+    contract.write_text(yaml.safe_dump(data))
+    with pytest.raises(AssertionError):
+        _assert_exact_rule_policies(root)
 
 
 def test_only_ing_cd_prod_exist():
@@ -207,6 +298,25 @@ def test_join_level_and_truth_level_remain_distinct():
     assert any("separately" in rule for rule in contract["join_truth_rules"])
 
 
+def _forbidden_field_locations(node, forbidden, prefix="manifest"):
+    """Exact recursive key inspection; values are never substring-scanned.
+
+    The contract forbids credential FIELD NAMES, so only mapping keys are
+    compared exactly. Harmless substrings inside values (for example the
+    legitimate filename secretin.xml) never trigger a false positive.
+    """
+    hits = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key in forbidden:
+                hits.append(f"{prefix}.{key}")
+            hits.extend(_forbidden_field_locations(value, forbidden, f"{prefix}.{key}"))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            hits.extend(_forbidden_field_locations(value, forbidden, f"{prefix}[{index}]"))
+    return hits
+
+
 def _validate_manifest(manifest, contract):
     spec = contract["manifest"]
     for field in spec["required_fields"]:
@@ -216,7 +326,7 @@ def _validate_manifest(manifest, contract):
             assert field in artifact, f"artifact missing {field}"
         assert re.fullmatch(r"[0-9a-f]{64}", artifact["sha256"])
         assert isinstance(artifact["byte_size"], int) and artifact["byte_size"] >= 0
-    forbidden = [f for f in spec["forbidden_manifest_fields"] if f in str(manifest)]
+    forbidden = _forbidden_field_locations(manifest, set(spec["forbidden_manifest_fields"]))
     assert not forbidden, f"manifest contains forbidden fields: {forbidden}"
     assert manifest["acquisition_mode"] in contract["acquisition_modes"]
     assert manifest["rights_status"] in contract["rights_statuses"]
@@ -261,6 +371,46 @@ def test_storage_manifest_validates_against_frozen_contract():
     leaking = dict(sample, presigned_url="https://example.invalid/signature")
     with pytest.raises(AssertionError):
         _validate_manifest(leaking, contract)
+
+
+def test_manifest_forbidden_field_check_inspects_keys_not_values():
+    contract = read("config/storage_contract.yaml")["storage_contract"]
+    sample = {
+        "schema_version": 1,
+        "lane_id": "S06",
+        "source_id": "dailymed",
+        "source_version": "v1",
+        "source_record_key": "setid-123",
+        "acquisition_mode": "api",
+        "fetched_at": "2026-09-08T00:00:00Z",
+        "upstream_published_at": None,
+        "adapter_git_sha": "a" * 40,
+        "rights_status": "cleared",
+        "parse_status": "staged",
+        "artifacts": [
+            {
+                "artifact_type": "structured_document",
+                "original_filename": "spl.xml",
+                "content_type": "application/xml",
+                "byte_size": 123456,
+                "object_key": "dailymed/v1/setid-123/original/spl.xml",
+                "sha256": "b" * 64,
+            }
+        ],
+    }
+    # A legitimate value containing the substring "secret" must pass: the
+    # contract forbids credential field names, not harmless value substrings.
+    artifact = dict(sample["artifacts"][0], original_filename="secretin.xml")
+    artifact["object_key"] = "dailymed/v1/setid-123/original/secretin.xml"
+    _validate_manifest(dict(sample, artifacts=[artifact]), contract)
+
+    # Forbidden credential FIELD NAMES fail at every depth, exactly.
+    for field in ("api_key", "password", "secret", "credential", "presigned_url"):
+        with pytest.raises(AssertionError):
+            _validate_manifest(dict(sample, **{field: "value"}), contract)
+    with pytest.raises(AssertionError):
+        artifact = dict(sample["artifacts"][0], bearer_token="token")
+        _validate_manifest(dict(sample, artifacts=[artifact]), contract)
 
 
 def test_object_key_contract_validates():
@@ -351,3 +501,167 @@ def test_manifest_last_and_immutable_upload_semantics_frozen():
     assert any("rejected" in rule and "quarantined" in rule for rule in semantics)
     assert any("original bytes are preserved" in rule.lower() for rule in semantics)
     assert contract["manifest_filename"] == "manifest.json"
+
+
+FROZEN_CLINICAL_RULE_FIELDS = [
+    "rule_id",
+    "target_kmx_id",
+    "target_level",
+    "category",
+    "jurisdiction",
+    "patient_trigger",
+    "required_patient_data",
+    "verdict",
+    "verdict_reason",
+    "severity",
+    "severity_reason",
+    "immediate_action",
+    "action_reason",
+    "recommendation",
+    "recommendation_reason",
+    "alternatives",
+    "risk_factors",
+    "monitoring",
+    "follow_up",
+    "status",
+    "created_at",
+    "updated_at",
+    "reviewed_at",
+    "reviewed_by",
+]
+
+
+def test_clinical_rule_structural_contract_frozen():
+    rules = read("config/rule_contract.yaml")["rule_contract"]
+    clinical = rules["clinical_rule"]
+    assert clinical["required_fields"] == FROZEN_CLINICAL_RULE_FIELDS
+    # The 17-part approved logical Rule is completely covered: target medicine,
+    # category, patient trigger, required patient data, verdict + reason,
+    # severity + reason, immediate action + reason, recommendation + reason,
+    # alternatives, risk factors, monitoring, follow-up, connected Evidence.
+    joined = " ".join(clinical["required_fields"])
+    for part in (
+        "patient_trigger",
+        "required_patient_data",
+        "verdict verdict_reason",
+        "severity severity_reason",
+        "immediate_action action_reason",
+        "recommendation recommendation_reason",
+        "alternatives",
+        "risk_factors",
+        "monitoring",
+        "follow_up",
+    ):
+        assert part in joined, f"17-part logical Rule missing {part}"
+    # Connected Evidence is bound through rule_evidence, not remapped here.
+    semantics = clinical["field_semantics"]
+    for field in ("patient_trigger", "required_patient_data", "status", "reviewed_by"):
+        assert field in semantics
+
+
+def test_rule_evidence_structural_contract_frozen():
+    rules = read("config/rule_contract.yaml")["rule_contract"]
+    rule_evidence = rules["rule_evidence"]
+    assert rule_evidence["required_fields"] == [
+        "rule_id",
+        "evidence_id",
+        "support_role",
+        "supports_fields",
+        "ordinal",
+    ]
+    joined = " ".join(rule_evidence["rules"])
+    assert "primary regulatory Evidence controls executable clinical action" in joined
+    assert (
+        "supporting Evidence may support explanation but cannot "
+        "independently change the action" in joined
+    ), "supporting Evidence must never independently change clinical action"
+
+
+def test_rule_test_structural_contract_frozen():
+    rules = read("config/rule_contract.yaml")["rule_contract"]
+    rule_test = rules["rule_test"]
+    assert rule_test["required_fields"] == [
+        "test_id",
+        "rule_id",
+        "test_name",
+        "patient_fixture",
+        "expected_outcome",
+        "expected_decision_fields",
+        "active",
+    ]
+    assert rule_test["field_semantics"]["expected_outcome"] == (
+        "exactly one of MATCH, NO_MATCH, CANNOT_FULLY_EVALUATE"
+    )
+
+
+def test_rule_outcomes_and_semantics_frozen():
+    rules = read("config/rule_contract.yaml")["rule_contract"]
+    assert rules["outcomes"] == ["MATCH", "NO_MATCH", "CANNOT_FULLY_EVALUATE"]
+    joined = " ".join(rules["outcome_rules"]).lower()
+    assert "missing required patient data returns cannot_fully_evaluate" in joined
+    assert "never no_match" in joined
+    assert "wrong formulation or product returns no_match" in joined
+    assert "all trigger conditions satisfied returns match" in joined
+
+
+def test_rule_evidence_inheritance_and_no_remap_frozen():
+    rules = read("config/rule_contract.yaml")["rule_contract"]
+    inheritance = rules["inheritance"]
+    assert inheritance["rule_target_kmx_id"] == "evidence_kmx_subject"
+    assert inheritance["rule_target_level"] == "evidence_truth_level"
+    assert inheritance["rule_category"] == "evidence_category"
+    assert inheritance["rule_jurisdiction"] == "evidence_jurisdiction"
+    joined = " ".join(inheritance["rules"])
+    assert "inheritance is immutable" in joined
+    assert "never resolves medicine identity again" in joined
+    assert "supporting biomedical sources never independently change" in joined
+
+
+def test_object_storage_docs_match_frozen_contract():
+    docs = (ROOT / "docs/OBJECT_STORAGE.md").read_text()
+    contract = read("config/storage_contract.yaml")["storage_contract"]
+    # Frozen five-segment layout documented exactly as the machine contract.
+    assert "<source_id>/<source_version>/<source_record_key>/original/<original_filename>" in docs
+    # Bulk releases use the literal record key __release__.
+    for bulk in (
+        "chembl/<release>/__release__/original/chembl_postgresql.tar.gz",
+        "drugcentral/<release>/__release__/original/drugcentral.dump",
+        "onsides/<release>/__release__/original/onsides.sqlite",
+        "open_targets/<release>/__release__/original/<partition>.parquet",
+    ):
+        assert bulk in docs, f"missing __release__ bulk example: {bulk}"
+    # Stale pre-hardening bulk keys (missing the record-key segment) are gone.
+    assert "chembl/<release>/original/chembl_postgresql.tar.gz" not in docs
+    assert "open_targets/<release>/original/*.parquet" not in docs
+    # lane_id stays outside the object key; source_id stays inside it.
+    assert "lane_id" in docs and "manifest only" in docs
+    assert "never in the object key" in docs
+    assert "source_id -> object key + manifest" in docs
+    # The vault/authority boundary is documented.
+    assert "Object Storage -> immutable raw source vault" in docs
+    assert "PostgreSQL" in docs and "normalized KMX/Evidence/Rule authority" in docs
+    # Every frozen manifest and artifact field is documented.
+    spec = contract["manifest"]
+    for field in spec["required_fields"] + spec["artifact_required_fields"]:
+        assert f"`{field}`" in docs, f"docs must document manifest field {field}"
+
+
+def test_evidence_placeholder_is_six_table_and_non_executable():
+    sql = (ROOT / "migrations/002_evidence.sql").read_text()
+    planned = [
+        "evidence.source",
+        "evidence.source_version",
+        "evidence.source_block",
+        "evidence.block_subject",
+        "evidence.clinical_evidence",
+        "evidence.evidence_support",
+    ]
+    for table in planned:
+        assert table in sql, f"missing planned Evidence table {table}"
+    lines = [line for line in sql.splitlines() if line.strip()]
+    assert all(line.lstrip().startswith("--") for line in lines), (
+        "002_evidence.sql must remain comment-only non-executable"
+    )
+    suite = read("config/migration_suite.yaml")["migrations"]
+    entry = next(m for m in suite if m["path"] == "migrations/002_evidence.sql")
+    assert entry["state"] == "pending", "002 must not be promoted before its design task"
