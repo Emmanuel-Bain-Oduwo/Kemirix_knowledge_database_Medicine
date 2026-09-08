@@ -1,22 +1,22 @@
-engineering_foundation: final_correction_ready_for_review
+engineering_foundation: closeout_ready_for_checkpoint
 infrastructure_vm: pass # Operator-reported baseline, not re-tested here.
 github: pass # Operator-reported repository availability, not ruleset verification.
 postgresql_connectivity: pass # Operator-reported baseline.
 object_storage_connectivity: pass # Operator-reported baseline.
 agent_environment: pass # Operator-reported baseline.
 codex_login: pass # Operator-reported baseline; current smoke remains pending.
-agent_phase_0: final_correction_ready_for_review
+agent_phase_0: closeout_ready_for_checkpoint
 main_only_git_model: implemented
 temporary_task_branch_policy: implemented
 merge_gate: implemented_locally_validated
-ci: pending
-ci_local_validation: pass # Final correction: 111 local tests passed (108 unit, 3 integration).
-github_hosted_ci: pending
-auto_merge: pending_external_one_time_configuration
-auto_merge_configuration: pending # Enable Allow auto-merge + required checks in GitHub settings.
+ci: pass # Owner-confirmed main CI execution.
+ci_local_validation: pass # 260 tests: 257 foundation/unit and 3 isolated integration; Ruff/config/secret scan pass.
+github_hosted_ci: pass # Owner-confirmed main CI execution.
+auto_merge: pass # Owner-confirmed automatic squash merge, PR 2.
+auto_merge_configuration: owner_verification_pending # Execution proven; protection settings are separate.
 legacy_develop_branch_deletion: pending_owner_action
-deploy_dev_workflow: implemented_not_executed
-development_deployment: pending
+deploy_dev_workflow: executed_successfully # Owner-confirmed.
+development_deployment: pass # Owner-confirmed exact-SHA development deployment.
 provider_smoke_tests: pending # Structural validation implemented; real calls not made.
 provider_structural_validation: implemented_locally_validated
 engineering_harnesses: implemented # Harness chain registry + KEMIRIX_ENGINEERING_HARNESS selection; Codex->OpenCode switch is a writer handoff.
@@ -25,10 +25,15 @@ agent_coordination: implemented
 memory_protocol: implemented
 research_gateway: implemented_disabled_backend
 worktree_tooling: implemented
-worktrees_initialized: pending
+worktrees_initialized: partially_observed # Codex worktree exists; full setup unverified.
 five_agent_dry_run: prepared_not_executed
 dbeaver_verification: pending
 phase_1_readiness: blocked_pending_human_and_external_validation
 kmx_implementation: not_started
 evidence_implementation: not_started
 rules_implementation: not_started
+pr_creation: pass # Owner-confirmed automation rehearsal.
+main_protection: pending_owner_configuration
+required_checks_configuration: pending_owner_configuration
+auto_delete_head_branches: pending_owner_configuration
+agent_gate_publication: implemented_pending_external_execution

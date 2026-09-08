@@ -96,16 +96,48 @@ uv run --frozen python -m agents.coordinator merge-gate TASK-001 \
   --ci-pass --test-result foundation
 ```
 
-### One-time GitHub repository configuration (required, not yet performed)
+The `foundation` job remains the ordinary CI check. Publish the separate
+`kemirix-agent-gate` commit status from the trusted coordination environment after
+real independent reports and lifecycle updates are available:
 
-Until these steps are actually performed in GitHub settings, automatic merge is
-not operational:
+```sh
+uv run --frozen python -m agents.publish_gate TASK-001 \
+  --repository OWNER/REPO --pr NUMBER --root /path/to/clean/task/worktree
+```
+
+This is an explicit GitHub write, requiring an authenticated operator with commit
+status permission; it does not open, merge or enable auto-merge on a PR. It first
+publishes pending on the exact PR head, verifies an open non-draft same-repository
+PR targeting main and a clean matching task checkout, fetches main, checks actual
+GitHub Actions `foundation` success tied to a successful `ci.yml` PR workflow
+run for that SHA, runs the task's safe test
+profiles, then calls the deterministic merge gate using canonical control-checkout
+reports and lifecycle state. Before success it rechecks PR identity, checkout and
+CI. Only MERGE_READY can publish success. Missing reports, stale SHA, wrong
+branch/base, failing tests/CI or unresolved lifecycle states produce failure;
+unavailable API evidence cannot produce a new success. Errors exit nonzero.
+
+Run the publisher again after checkpoint/review/CI changes. A new PR head requires
+its own status; success on an older SHA does not satisfy it. Do not publish via
+untrusted reviewer/model tools. The local coordinator `--ci-pass` / `--test-result`
+flags remain operator attestations; they are not accepted by the publisher.
+Foundation PASS alone does not establish agent review or the five-agent rehearsal.
+
+PR creation, automatic squash merge, main CI and exact-SHA development deployment
+have executed successfully (owner-confirmed automation rehearsal; main checkpoint
+`7882b81`). This proves the delivery path, not five-agent external review.
+
+### Owner-side GitHub repository configuration after this checkpoint
+
+The owner must verify/configure the following in GitHub settings; this code
+checkpoint does not change repository administration or prove protection settings:
 
 1. Settings → General → Pull Requests: enable **Allow auto-merge**; select squash
    merge as the default; enable **Automatically delete head branches**.
 2. Settings → Branches → Branch protection for `main`: require a pull request
    before merging, require approvals as configured, require status checks
-   (the `foundation` CI job) and require branches to be up to date before merging;
+   (both `foundation` and `kemirix-agent-gate`) and require branches to be up to
+   date before merging;
    prohibit force pushes and deletions.
 3. Grant agents push access to their own `agent/*` branches only (ruleset);
    direct pushes to main are prohibited for everyone.

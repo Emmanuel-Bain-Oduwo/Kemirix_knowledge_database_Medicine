@@ -216,7 +216,7 @@ def test_merge_gate_ready_after_handoff_with_preserved_base(control, monkeypatch
     # state, the merge gate still validates against the main-anchored base after
     # a Codex -> OpenCode harness switch.
     monkeypatch.setattr("agents.merge_gate.git", lambda root, *args: "")
-    merge_gate_reports(control)
+    merge_gate_reports(control, head_sha="b" * 40)
     update_task(control, commit_sha="b" * 40)
     handoff(control, "TEST-001", "glm", {**handoff_details(), "last_commit_sha": "b" * 40}, True)
     update_task(control, status="ci")
@@ -654,7 +654,7 @@ def update_task(control, **changes):
     save_task(control, Task.model_validate(data))
 
 
-def merge_gate_reports(control, research=True):
+def merge_gate_reports(control, research=True, head_sha=SHA):
     reports = control / "ops/reports/TEST-001"
     reports.mkdir(parents=True, exist_ok=True)
     (reports / "qwen-crosscheck.md").write_text("PASS\nFindings: none.\nChecks: fixture.\n")
@@ -665,6 +665,12 @@ def merge_gate_reports(control, research=True):
     if research:
         (reports / "kimi-analysis.md").write_text(
             "ANALYSIS_COMPLETE\nFindings: fixture.\nReferences: fixture.\n"
+        )
+
+    for path in reports.glob("*.md"):
+        role = next(role for role, filename in REPORTS.items() if filename == path.name)
+        path.write_text(
+            path.read_text() + f"Task-ID: TEST-001\nHead-SHA: {head_sha}\nRole: {role}\n"
         )
 
 
@@ -1201,3 +1207,380 @@ def test_context_keeps_invariants_forbidden_for_foundation(foundation_control):
     assert "SKILL.md" in forbidden and "ops/memory/INVARIANTS.md" in forbidden
     assert "migrations" in forbidden and "src/kmx" in forbidden
     assert "ops/memory" not in forbidden
+
+
+@pytest.mark.parametrize("role", ["qwen", "glm", "nemotron", "kimi"])
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "missing",
+        "empty",
+        "wrong_result",
+        "wrong_task",
+        "stale_sha",
+        "unbound",
+        "duplicate",
+        "wrong_role",
+        "no_findings",
+        "no_evidence",
+    ],
+)
+def test_merge_gate_each_report_required(control, monkeypatch, role, defect):
+    monkeypatch.setattr("agents.merge_gate.git", lambda root, *args: "")
+    merge_gate_reports(control)
+    update_task(control, status="ci")
+    path = control / "ops/reports/TEST-001" / REPORTS[role]
+    text = path.read_text()
+    if defect == "missing":
+        path.unlink()
+    else:
+        text = {
+            "empty": "",
+            "wrong_role": text.replace(f"Role: {role}", "Role: codex"),
+            "no_findings": text.replace("Findings:", "Absent:"),
+            "no_evidence": text.replace("Checks:", "Absent:").replace("References:", "Absent:"),
+            "wrong_result": "BLOCKED\n" + text.split("\n", 1)[1],
+            "wrong_task": text.replace("Task-ID: TEST-001", "Task-ID: OTHER-001"),
+            "stale_sha": text.replace(SHA, "b" * 40),
+            "unbound": text.split("Task-ID:")[0],
+            "duplicate": text + f"Head-SHA: {SHA}\n",
+        }[defect]
+        path.write_text(text)
+    report = evaluate(
+        control,
+        "TEST-001",
+        "agent/codex/TEST-001",
+        SHA,
+        SHA,
+        ci_pass=True,
+        test_results={"foundation": True},
+        main_head=SHA,
+    )
+    assert report["result"] == "NOT_READY"
+    assert report["failed"] == [f"report_{role}"]
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        "created",
+        "research",
+        "implementation",
+        "crosscheck",
+        "review",
+        "qa",
+        "fixes",
+        "merged",
+        "deployed",
+        "verified",
+        "closed",
+        "ci",
+        "awaiting_human",
+    ],
+)
+def test_merge_gate_lifecycle_allowlist(control, monkeypatch, status):
+    monkeypatch.setattr("agents.merge_gate.git", lambda root, *args: "")
+    merge_gate_reports(control)
+    update_task(
+        control,
+        status=status,
+        deployed_sha=SHA if status in {"deployed", "verified"} else None,
+        completed_at=datetime.now(timezone.utc) if status == "closed" else None,
+    )
+    report = evaluate(
+        control,
+        "TEST-001",
+        "agent/codex/TEST-001",
+        SHA,
+        SHA,
+        ci_pass=True,
+        test_results={"foundation": True},
+        main_head=SHA,
+    )
+    assert (report["result"] == "MERGE_READY") == (status in {"ci", "awaiting_human"})
+
+
+@pytest.mark.parametrize(
+    "condition,value",
+    [
+        ("ci_pass", False),
+        ("ci_pass", None),
+        ("ci_pass", "PASS"),
+        ("ci_pass", 1),
+        ("test_results", {}),
+        ("test_results", {"foundation": False}),
+        ("test_results", {"foundation": "PASS"}),
+        ("test_results", {"foundation": 1}),
+        ("branch", "main"),
+        ("branch", "agent/glm/TEST-001"),
+        ("base_sha", "b" * 40),
+        ("head_sha", "b" * 40),
+        ("main_head", None),
+    ],
+)
+def test_merge_gate_one_failed_condition_blocks_success(control, monkeypatch, condition, value):
+    monkeypatch.setattr("agents.merge_gate.git", lambda root, *args: "")
+    merge_gate_reports(control)
+    update_task(control, status="ci")
+    args = dict(
+        branch="agent/codex/TEST-001",
+        base_sha=SHA,
+        head_sha=SHA,
+        ci_pass=True,
+        test_results={"foundation": True},
+        main_head=SHA,
+    )
+    args[condition] = value
+    assert evaluate(control, "TEST-001", **args)["result"] == "NOT_READY"
+
+
+def test_merge_gate_requires_every_test_profile(control, monkeypatch):
+    monkeypatch.setattr("agents.merge_gate.git", lambda root, *args: "")
+    merge_gate_reports(control)
+    update_task(control, status="ci", required_tests=["foundation", "integration", "contract"])
+    results = {}
+    for profile in ["foundation", "integration", "contract"]:
+        assert (
+            evaluate(control, "TEST-001", "agent/codex/TEST-001", SHA, SHA, True, results, SHA)[
+                "result"
+            ]
+            == "NOT_READY"
+        )
+        results[profile] = True
+    assert (
+        evaluate(control, "TEST-001", "agent/codex/TEST-001", SHA, SHA, True, results, SHA)[
+            "result"
+        ]
+        == "MERGE_READY"
+    )
+
+
+def test_merge_gate_rejects_head_outside_base(control, monkeypatch):
+    def ancestry(root, *args):
+        if args[-1] == SHA:
+            raise RuntimeError("unrelated checkpoint")
+        return ""
+
+    monkeypatch.setattr("agents.merge_gate.git", ancestry)
+    merge_gate_reports(control)
+    update_task(control, status="ci")
+    report = evaluate(
+        control, "TEST-001", "agent/codex/TEST-001", SHA, SHA, True, {"foundation": True}, "b" * 40
+    )
+    assert report["failed"] == ["head_on_base"]
+    assert report["result"] == "NOT_READY"
+
+
+@pytest.mark.parametrize("defect", [None, "report", "ci", "test", "lifecycle", "fetch"])
+def test_merge_gate_cli_exit_status(control, monkeypatch, capsys, defect):
+    from agents.coordinator import main
+
+    merge_gate_reports(control)
+    update_task(control, status="ci")
+    monkeypatch.setattr("agents.coordinator.control_root", lambda root: control)
+    monkeypatch.setattr("agents.merge_gate.git", lambda root, *args: "")
+
+    def fetched(root, *args):
+        if defect == "fetch":
+            raise RuntimeError("unavailable main")
+        return SHA
+
+    monkeypatch.setattr("agents.gitops.git", fetched)
+    args = [
+        "merge-gate",
+        "TEST-001",
+        "--branch",
+        "agent/codex/TEST-001",
+        "--base-sha",
+        SHA,
+        "--head-sha",
+        SHA,
+    ]
+    if defect != "ci":
+        args += ["--ci-pass"]
+    if defect != "test":
+        args += ["--test-result", "foundation"]
+    if defect == "report":
+        (control / "ops/reports/TEST-001/qwen-crosscheck.md").unlink()
+    if defect == "lifecycle":
+        update_task(control, status="fixes")
+    if defect is None:
+        main(args)
+        assert json.loads(capsys.readouterr().out)["result"] == "MERGE_READY"
+    else:
+        with pytest.raises(SystemExit) as exc:
+            main(args)
+        assert exc.value.code == 1
+        assert "MERGE_READY" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        None,
+        "no_report",
+        "wrong_report",
+        "stale_report",
+        "wrong_task",
+        "wrong_branch",
+        "wrong_base",
+        "fork",
+        "closed",
+        "draft",
+        "stale_checkpoint",
+        "dirty",
+        "test_failure",
+        "ci_missing",
+        "ci_failed",
+        "ci_pending",
+        "ci_skipped",
+        "ci_cancelled",
+        "ci_stale",
+        "ci_wrong_app",
+        "ci_incomplete",
+        "lifecycle",
+        "head_moves",
+        "ci_changes",
+        "api_error",
+        "workflow_failed",
+        "wrong_suite",
+        "wrong_base_sha",
+        "dirty_after_tests",
+    ],
+)
+def test_github_agent_gate_publication(control, monkeypatch, defect):
+    import copy
+
+    from agents import publish_gate
+
+    merge_gate_reports(control)
+    update_task(control, status="ci")
+    pull = {
+        "state": "open",
+        "draft": False,
+        "head": {"sha": SHA, "ref": "agent/codex/TEST-001", "repo": {"full_name": "owner/repo"}},
+        "base": {"sha": SHA, "ref": "main", "repo": {"full_name": "owner/repo"}},
+    }
+    run = {
+        "name": "foundation",
+        "head_sha": SHA,
+        "status": "completed",
+        "conclusion": "success",
+        "app": {"slug": "github-actions"},
+        "check_suite": {"id": 12},
+    }
+    checks = {"total_count": 1, "check_runs": [run]}
+    if defect == "no_report":
+        (control / "ops/reports/TEST-001/qwen-crosscheck.md").unlink()
+    if defect in {"wrong_report", "stale_report"}:
+        path = control / "ops/reports/TEST-001/qwen-crosscheck.md"
+        path.write_text(
+            path.read_text().replace("PASS", "REQUEST_CHANGES")
+            if defect == "wrong_report"
+            else path.read_text().replace(SHA, "b" * 40)
+        )
+    if defect == "wrong_branch":
+        pull["head"]["ref"] = "agent/glm/TEST-001"
+    if defect == "wrong_base":
+        pull["base"]["ref"] = "other"
+    if defect == "wrong_base_sha":
+        pull["base"]["sha"] = "b" * 40
+    if defect == "wrong_suite":
+        run["check_suite"]["id"] = 13
+    if defect == "fork":
+        pull["head"]["repo"]["full_name"] = "other/repo"
+    if defect == "closed":
+        pull["state"] = "closed"
+    if defect == "draft":
+        pull["draft"] = True
+    if defect == "stale_checkpoint":
+        update_task(control, commit_sha="b" * 40)
+    if defect == "lifecycle":
+        update_task(control, status="fixes")
+    if defect == "ci_missing":
+        checks = {"total_count": 0, "check_runs": []}
+    if defect in {"ci_failed", "ci_skipped", "ci_cancelled"}:
+        run["conclusion"] = {
+            "ci_failed": "failure",
+            "ci_skipped": "skipped",
+            "ci_cancelled": "cancelled",
+        }[defect]
+    if defect == "ci_pending":
+        run["status"] = "in_progress"
+    if defect == "ci_stale":
+        run["head_sha"] = "b" * 40
+    if defect == "ci_wrong_app":
+        run["app"]["slug"] = "other"
+    if defect == "ci_incomplete":
+        checks["total_count"] = 101
+    published = []
+    calls = {"pull": 0, "ci": 0, "tests": 0}
+
+    def fake_api(endpoint, **fields):
+        if "/statuses/" in endpoint:
+            assert endpoint.endswith(SHA)
+            assert fields["context"] == "kemirix-agent-gate"
+            published.append(fields["state"])
+            return {}
+        if "/pulls/" in endpoint:
+            calls["pull"] += 1
+            result = copy.deepcopy(pull)
+            if defect == "head_moves" and calls["pull"] > 1:
+                result["head"]["sha"] = "b" * 40
+            return result
+        if "/actions/workflows/" in endpoint:
+            return {
+                "total_count": 1,
+                "workflow_runs": [
+                    {
+                        "head_sha": SHA,
+                        "head_branch": "agent/codex/TEST-001",
+                        "event": "pull_request",
+                        "status": "completed",
+                        "check_suite_id": 12,
+                        "conclusion": "failure" if defect == "workflow_failed" else "success",
+                    }
+                ],
+            }
+        assert "/check-runs?per_page=100" in endpoint
+        calls["ci"] += 1
+        if defect == "api_error":
+            raise RuntimeError("API unavailable")
+        result = copy.deepcopy(checks)
+        if defect == "ci_changes" and calls["ci"] > 1:
+            result["check_runs"][0]["conclusion"] = "failure"
+        return result
+
+    def local_git(root, *args):
+        if args[0] == "status":
+            return (
+                " M file"
+                if defect == "dirty" or (defect == "dirty_after_tests" and calls["tests"])
+                else ""
+            )
+        if args[0] == "branch":
+            return "agent/codex/TEST-001"
+        return SHA
+
+    def tests(root, profiles):
+        calls["tests"] += 1
+        assert profiles == ["foundation"]
+        if defect == "test_failure":
+            raise RuntimeError("required test failed")
+
+    monkeypatch.setattr(publish_gate, "api", fake_api)
+    monkeypatch.setattr(publish_gate, "control_root", lambda root: control)
+    monkeypatch.setattr(publish_gate, "git", local_git)
+    monkeypatch.setattr(publish_gate, "safe_checks", tests)
+    monkeypatch.setattr("agents.merge_gate.git", lambda root, *args: "")
+    try:
+        report = publish_gate.publish(
+            control, "owner/repo", 1, "OTHER-001" if defect == "wrong_task" else "TEST-001"
+        )
+    except (ValueError, RuntimeError, FileNotFoundError):
+        assert defect is not None
+    else:
+        assert (report["result"] == "MERGE_READY") == (defect is None)
+    assert published == (["pending", "success"] if defect is None else ["pending", "failure"])
+    if defect is None:
+        assert calls == {"pull": 2, "ci": 2, "tests": 1}
