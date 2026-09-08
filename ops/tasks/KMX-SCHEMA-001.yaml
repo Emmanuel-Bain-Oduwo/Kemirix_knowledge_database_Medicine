@@ -1,0 +1,94 @@
+schema_version: 2
+task_id: KMX-SCHEMA-001
+phase: phase_1
+goal: 'Start the production database build (SKILL.md Phase 2 foundation): replace the placeholder migrations/001_kmx.sql
+  with reviewed executable PostgreSQL 17 DDL for the complete kmx identity schema (kmx.registry, kmx.contains,
+  kmx.external_identifier, kmx.name_index, kmx.mapping_exception) exactly matching the frozen SKILL.md
+  sections 2/2A/11 architecture and config/database.yaml inventory, promote it to state executable in
+  config/migration_suite.yaml so the CI migration-from-zero gate runs it on isolated hosted PostgreSQL,
+  and cover the DDL structure and migration-suite declarations with automated tests. No data loading,
+  no evidence/rules DDL, no source adapters, no engineering-system changes. The Phase-0 regression test
+  tests/test_runtime.py that asserted no executable migrations is updated to assert the executable kmx
+  prefix.'
+production_writer: codex
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: codex
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- migrations/001_kmx.sql
+- migrations/README.md
+- config/migration_suite.yaml
+- tests/test_runtime.py
+- tests/kmx
+- src/kmx/README.md
+- docs/DATABASE.md
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations/002_evidence.sql
+- migrations/003_rules.sql
+- src/agents
+- src/evidence
+- src/rules
+- src/sources
+- src/database
+- opencode.json
+base_sha: bdfd2ebae9bc01c973e0077a1b2992d792937325
+branch: agent/codex/KMX-SCHEMA-001
+research_required: false
+acceptance_criteria:
+- migrations/001_kmx.sql contains reviewed executable PostgreSQL 17 DDL creating the kmx schema with exactly
+  the five tables registry, contains, external_identifier, name_index and mapping_exception from the frozen
+  SKILL.md and config/database.yaml inventory, with primary keys, foreign keys, level and KMX-ID constraints
+  (ING/CD/PROD), unique external-identifier binding per source, and combination-safe containment.
+- kmx.registry enforces KMX id format (KMX-ING-/KMX-CD-/KMX-PROD- prefix with numeric suffix), a level
+  matching the prefix, and stable preferred names; kmx.contains supports multiple ingredient parents for
+  combination CDs without cycles.
+- kmx.mapping_exception preserves unresolved or ambiguous identity conflicts with review status; kmx.name_index
+  is a lookup aid only and never mints identity.
+- config/migration_suite.yaml promotes migrations/001_kmx.sql to executable while 002/003 remain pending,
+  so the CI migration gate executes only the ready prefix from an empty database and fails closed on any
+  inventory mismatch.
+- Automated tests cover the migration-suite declaration logic, DDL structure expectations (tables, columns,
+  constraints) against the shipped SQL, and the KMX ID format rules without requiring a live database.
+- No data loading, no evidence/rules schema changes, no source adapter code, no engineering-system (src/agents,
+  opencode.json) changes are introduced.
+required_tests:
+- foundation
+status: implementation
+created_at: '2026-09-08T12:45:00.449181Z'
+updated_at: '2026-09-08T13:04:23.671271+00:00'
+completed_at: null
+commit_sha: null
+deployed_sha: null
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the KMX schema is fully specified by frozen SKILL.md sections
+    2/2A/11, config/database.yaml and config/migration_suite.yaml; the task is reviewed executable DDL
+    plus tests on the existing architecture.'
+  human_approved: false
+  timestamp: '2026-09-08T12:45:11.188045+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: migrations/001_kmx.sql full kmx DDL (registry, contains, external_identifier,
+    name_index, mapping_exception) with KMX-ID format/level constraints and combination-safe containment;
+    promotion to executable in config/migration_suite.yaml; structure tests under tests/kmx; migrations
+    README update. No data loading, no evidence/rules DDL, no engineering-system changes.'
+  human_approved: false
+  timestamp: '2026-09-08T12:45:11.338705+00:00'
+- operation: contract_expanded
+  role: codex
+  evidence: Owner directive to start the production database implementation makes the migrations executable,
+    so the Phase-0 regression test asserting no executable migrations (tests/test_runtime.py) must be
+    updated to the new executable-prefix contract. tests/test_runtime.py added to allowed_paths before
+    the first checkpoint; no other scope change.
+  timestamp: '2026-09-08T13:04:23.671259+00:00'
