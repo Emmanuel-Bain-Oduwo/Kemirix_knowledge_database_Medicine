@@ -1,0 +1,181 @@
+schema_version: 2
+task_id: CORE-001
+phase: phase_2
+goal: 'Make the domain Python foundation production-ready and importable per the owner-approved
+  2026-09-08 execution book section 9 (Phase 2 - CORE-001): fix pyproject packaging
+  to include the domain packages (src/kmx, src/evidence, src/rules, src/storage, src/database,
+  src/sources) instead of src/agents only; implement the minimal shared core types
+  (KMX level, KMX ID validation, lane ID, source ID, Evidence category, Evidence status,
+  truth and join levels, source role, rights status, parse status, Rule evaluation
+  outcome, jurisdiction) without duplicating enums across modules; implement deterministic
+  loading and validation for the database config, object storage config, categories,
+  jurisdictions, source schema and all 27 source configs through one common interface
+  that fails closed on invalid configuration; add the small shared error hierarchy
+  (configuration, identity resolution, mapping exception boundary, storage contract,
+  database contract, source contract); and provide the common source registry foundation
+  exposing lane_id, source_id, acquisition_mode, role, KMX capability, Evidence role,
+  Rule role and rights/version policy for all 27 lanes. No real S3 uploads, no PostgreSQL
+  pool, no HTTP acquisition, no parsers, no source loading, no Evidence extraction,
+  no Rule compilation.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- pyproject.toml
+- src/kmx
+- src/evidence
+- src/rules
+- src/storage
+- src/database
+- src/sources
+- tests/test_core.py
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- src/agents
+- config
+- docs
+base_sha: ad4f48bbbe804b7918e3a6247c9c725f2d5aa77d
+branch: agent/glm/CORE-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- pyproject.toml packages include src/agents plus the six domain packages; every domain
+  package imports cleanly and packaging is no longer limited to src/agents.
+- 'Shared core types exist exactly once: KmxLevel and validated Kmx-IDs in kmx.models,
+  EvidenceCategory (exactly 24, follow_up excluded) in evidence.categories, EvidenceStatus
+  plus truth/join level semantics in evidence.models (reusing the KMX level enum,
+  never duplicating it), RuleOutcome (MATCH/NO_MATCH/CANNOT_FULLY_EVALUATE) in rules.models,
+  and acquisition/rights/parse statuses in storage.models; lane IDs (S01-S27) and
+  source slugs are validated as distinct identifier kinds.'
+- 'Deterministic config loading: database config (exact 5+6+3 inventory), object storage
+  + storage contract (layout, controlled values, manifest fields), categories, jurisdictions,
+  source schema and all 27 source configs load through one common interface with fail-closed
+  validation (invalid slug, missing field, duplicate lane or source ID, unknown category,
+  unknown jurisdiction, unsupported KMX level all raise).'
+- 'Small shared error hierarchy: KemirixError base with configuration, identity resolution
+  and mapping exception boundary errors in kmx.exceptions, plus storage contract,
+  database contract and source contract errors in their packages; no large framework.'
+- The source registry foundation loads all 27 lanes and exposes lane_id, source_id,
+  acquisition_mode, role, KMX capability, Evidence role, Rule policy and rights/version
+  policy from the frozen configs; it is a common registry, not a DailyMed adapter.
+- 'Domain import boundaries stay clean: no boto3, psycopg, HTTP clients or parsers
+  are imported; unit tests require no external services.'
+- 'tests/test_core.py proves: every domain package imports; packaging includes domain
+  modules; all 27 source configs validate through the common interface; shared enums
+  match the frozen contracts; KMX IDs validate (and reject KMX-PRES-style ids); invalid
+  configs fail closed; duplicate lane/source IDs fail; categories are exactly 24;
+  no unsupported KMX level exists; config models serialize and parse deterministically.'
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-08T18:47:42.825044Z'
+updated_at: '2026-09-08T19:11:00.796195Z'
+completed_at: '2026-09-08T19:11:00.796200Z'
+commit_sha: c255ea0f64eb8976f890ab6df45cdce9f191e153
+deployed_sha: c255ea0f64eb8976f890ab6df45cdce9f191e153
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: CORE-001 is fully specified by the owner-approved
+    execution book section 9 and the frozen contracts landed by DOMAIN-CONTRACT-001.'
+  human_approved: false
+  timestamp: '2026-09-08T18:47:54.131876+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: pyproject packaging fix, shared core types/enums, deterministic
+    common config loading, small error hierarchy, 27-lane source registry foundation,
+    import boundaries and the CORE test suite; no adapters, no S3/PostgreSQL/HTTP/parsers.'
+  human_approved: false
+  timestamp: '2026-09-08T18:47:54.290815+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 6e9ee61cfc7c0d69db56f72bf927c9cd5c50058f
+  timestamp: '2026-09-08T18:59:12.775510+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: e79bec16ee36063bbfb3f2506aa87542673e325a
+  timestamp: '2026-09-08T19:02:53.569715+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint 6e9ee61 complete: production-ready domain foundation
+    (packaging fix, shared core types, common fail-closed config loading, error hierarchy,
+    27-lane registry), 322 tests, ruff, config validation and secret scan clean, wheel
+    build verified to contain all domain packages; PR #11 foundation CI SUCCESS.'
+  human_approved: false
+  timestamp: '2026-09-08T19:03:27.430351+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 6e9ee61: all eight checks OK.'
+  human_approved: false
+  timestamp: '2026-09-08T19:03:27.608487+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 6e9ee61: wheel build verified to
+    contain all domain packages, single-definition core types verified, common fail-closed
+    loader paths re-executed, manifest/object-key safety verified, import boundaries
+    confirmed. Seat provenance per D020 owner directive; MiniMax is a real independent
+    Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-08T19:05:08.394937+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 0df9b656ffdd8398b4329deca6ce9182d718c987
+  timestamp: '2026-09-08T19:07:14.174563+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 6e9ee61: all eight adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-08T19:07:50.458020+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #11 foundation CI SUCCESS on head 6e9ee61 (run
+    34266342847); all three gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-08T19:07:50.617580+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #11 squash-merged into main at c255ea0 after MERGE_READY and agent-gate
+    SUCCESS on exact head 6e9ee61; main CI SUCCESS (run 34267209291).'
+  human_approved: true
+  timestamp: '2026-09-08T19:11:00.313689+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34267260202) deployed the exact
+    merged SHA: DEPLOYED_SHA=c255ea0f64eb8976f890ab6df45cdce9f191e153; idempotent
+    migration verification passed.'
+  human_approved: true
+  timestamp: '2026-09-08T19:11:00.472518+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh c255ea0: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-08T19:11:00.636123+00:00'
+- from: verified
+  to: closed
+  evidence: 'CORE-001 complete: production-ready importable domain foundation (packaging
+    fix with wheel-verified domain packages, single-definition shared core types,
+    common fail-closed config loading for all 27 lanes, small error hierarchy, source
+    registry foundation, clean import boundaries), full review chain (real Nebius
+    MiniMax PASS, GLM PASS, real Nebius Nemotron QA_PASS), merge gate MERGE_READY,
+    agent-gate SUCCESS, squash merge at c255ea0, main CI SUCCESS, exact-SHA deployment
+    verified.'
+  human_approved: true
+  timestamp: '2026-09-08T19:11:00.796201+00:00'

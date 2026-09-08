@@ -44,6 +44,7 @@ forbidden_paths:
 base_sha: bdfd2ebae9bc01c973e0077a1b2992d792937325
 branch: agent/glm/KMX-SCHEMA-001
 research_required: false
+owner_approved_skill_update: false
 acceptance_criteria:
 - migrations/001_kmx.sql contains reviewed executable PostgreSQL 17 DDL creating the
   kmx schema with exactly the five tables registry, contains, external_identifier,
@@ -65,12 +66,12 @@ acceptance_criteria:
   (src/agents, opencode.json) changes are introduced.
 required_tests:
 - foundation
-status: merged
+status: closed
 created_at: '2026-09-08T12:45:00.449181Z'
-updated_at: '2026-09-08T17:00:23.029104Z'
-completed_at: null
+updated_at: '2026-09-08T18:12:55.341345Z'
+completed_at: '2026-09-08T18:12:55.341350Z'
 commit_sha: b36b909bbfd96b59ee19343c3c39177c2a236c79
-deployed_sha: null
+deployed_sha: 44db32f5ab7a03f9e53dab8b79414e968f4243ad
 handoffs:
 - last_commit_sha: fb3109d355ceb1cb991542da6f117c6c4fdce3e0
   completed_work:
@@ -275,3 +276,36 @@ events:
     provider runs.'
   human_approved: true
   timestamp: '2026-09-08T17:00:23.029110+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Development deployment verified: main 44db32f (descendant of the merged
+    b36b909; the auto-deploy fired during the CD-fix window before the deferred sequential
+    redeploy could run, and the runtime stale-deployment protection correctly prevents
+    older-SHA deploys afterwards) contains the merged kmx identity DDL, and the separately
+    reviewed development migration execution applied migrations/001_kmx.sql from-zero
+    in a single transaction to the development PostgreSQL 17.11, creating exactly
+    kmx.registry, kmx.contains, kmx.external_identifier, kmx.name_index and kmx.mapping_exception.
+    scripts/verify-runtime.sh 44db32f: DEPLOYED_SHA=44db32f, release exists, integrity
+    PASS, smoke PASS. Deploy development workflow SUCCESS.'
+  human_approved: true
+  timestamp: '2026-09-08T18:12:55.004501+00:00'
+- from: deployed
+  to: verified
+  evidence: 'Runtime verification at 44db32f5ab7a03f9e53dab8b79414e968f4243ad: expected
+    SHA == DEPLOYED_SHA == current symlink target, release intact against the Git
+    archive, offline smoke PASS, and the development database contains exactly the
+    five kmx tables created by the merged migration from zero.'
+  human_approved: true
+  timestamp: '2026-09-08T18:12:55.174532+00:00'
+- from: verified
+  to: closed
+  evidence: 'KMX-SCHEMA-001 complete: implemented (executable kmx DDL, container/member
+    containment, lane/source slug separation, recordable identifier conflicts, full
+    mapping_exception provenance), independently cross-checked (real Nebius MiniMax-M3
+    PASS), reviewed (GLM PASS), adversarially QA-passed (real Nebius Nemotron 3 Ultra),
+    merge gate MERGE_READY with kemirix-agent-gate SUCCESS on the exact PR head, squash-merged
+    at main b36b909 (PR #6), main CI SUCCESS with hosted migration-from-zero, development
+    deployment verified with the kmx schema applied to the dev database, memory synchronized
+    through FOUNDATION-KMX-CLOSEOUT-001 (PR #7, f96715d).'
+  human_approved: true
+  timestamp: '2026-09-08T18:12:55.341351+00:00'

@@ -1,0 +1,198 @@
+schema_version: 2
+task_id: DOMAIN-CONTRACT-001
+phase: phase_1
+goal: 'Freeze the universal domain contracts for all 27 approved source lanes per
+  the owner-approved 2026-09-08 blueprints (SKILL NEW(3) v5.0 and the knowledge foundation
+  execution book): the complete database inventory (5 KMX + 6 Evidence + 3 Rule tables),
+  the Object Storage object-key and manifest contract (immutable/idempotent upload,
+  collision rejection, manifest last, original-byte preservation, rights status, credential
+  exclusion), the KMX ING/CD/PROD contract, join_level vs truth_level separation,
+  the 24 shared categories, the Evidence contract (source/version/KMX/category/jurisdiction
+  specificity, evidence_support, block_subject, controlled statuses, no model clinical
+  approval), the Rule contract (eligibility, immutable inheritance, exact outcomes
+  MATCH/NO_MATCH/CANNOT_FULLY_EVALUATE) and the source authority roles (S07 duplicate
+  projection, S11 gated, S16 sourcing exclusion, S20 dynamic ChEMBL release, S16-S24
+  supporting lanes, S26/S27 regulatory primary). Contracts are frozen as validated
+  configuration plus automated contract tests. No source parsers, no data loading,
+  no Evidence/Rules DDL.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- config/database.yaml
+- config/evidence_contract.yaml
+- config/rule_contract.yaml
+- config/storage_contract.yaml
+- config/object_storage.yaml
+- config/source_schema.yaml
+- config/sources
+- docs/SOURCE_MATRIX.md
+- tests/test_domain_contracts.py
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+- src/database
+- src/storage
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs/AGENT_COORDINATION.md
+base_sha: 53808646c29f0123c7206b44114bc269233d2390
+branch: agent/glm/DOMAIN-CONTRACT-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- 'config/database.yaml inventories exactly the 14 approved tables: five kmx (registry,
+  contains, external_identifier, name_index, mapping_exception), six evidence (source,
+  source_version, source_block, block_subject, clinical_evidence, evidence_support)
+  and three rules (clinical_rule, rule_evidence, rule_test).'
+- config/storage_contract.yaml freezes the approved object-key pattern <source_id>/<source_version>/<source_record_key>/original/,
+  the full manifest contract (schema_version, lane_id, source_id, source_version,
+  source_record_key, acquisition_mode, fetched_at, upstream_published_at, adapter_git_sha,
+  rights_status, parse_status, artifacts with artifact_type, original_filename, content_type,
+  byte_size, object_key, sha256), the controlled values (acquisition modes, rights
+  statuses, parse statuses), immutable/idempotent upload semantics, collision rejection,
+  manifest-last behavior, original-byte preservation and the exclusion of credentials
+  and presigned URLs from manifests; config/object_storage.yaml layout matches the
+  frozen pattern.
+- config/evidence_contract.yaml freezes the Evidence statuses (draft, approved, stale,
+  retired), evidence_support (evidence_id, block_id, support_role, ordinal), block_subject
+  (block_id, join_kmx_id, join_level, resolver_method, mapping_status), the separate
+  join_level and truth_level fields with their ING/CD/PROD value set and distinct
+  semantics, source/version/KMX/category/jurisdiction specificity, no-silent-blending
+  and no-model-clinical-approval rules.
+- config/rule_contract.yaml freezes the exact outcomes (MATCH, NO_MATCH, CANNOT_FULLY_EVALUATE),
+  the missing-required-data and wrong-formulation semantics, the immutable inheritance
+  (target_kmx_id, target_level, category, jurisdiction from approved Evidence), rule
+  eligibility (approved, eligible, executable Evidence from primary regulatory/guideline
+  lanes only) and the source authority invariants (S07 duplicate projection is not
+  an independent vote; S11 authority-gated; S16 excludes supplier/vendor sourcing;
+  S20 resolves the current approved ChEMBL release dynamically; S16-S24 supporting
+  lanes never independently create prescribing authority; S26/S27 are primary when
+  Evidence is executable; duplicate projections are not independent clinical votes).
+- docs/SOURCE_MATRIX.md reflects the frozen 27-lane registry with stable source slugs
+  and authority roles.
+- 'tests/test_domain_contracts.py proves at minimum: all 27 lanes exist with unique
+  lane IDs and unique source IDs; lane_id and source_id semantics are distinct (S01-S27
+  lanes vs slug identifiers); all source configs load and match the owner-approved
+  registry; only ING/CD/PROD exist; exactly 24 categories with follow_up excluded;
+  the DB inventory is exactly 5+6+3; join_level and truth_level remain distinct; the
+  storage manifest validates against the frozen contract; the object-key contract
+  validates; the KMX migration has no Evidence dependency; controlled statuses validate;
+  source authority roles validate; forbidden architecture additions are absent.'
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-08T18:28:43.587306Z'
+updated_at: '2026-09-08T18:46:04.042163Z'
+completed_at: '2026-09-08T18:46:04.042168Z'
+commit_sha: ad4f48bbbe804b7918e3a6247c9c725f2d5aa77d
+deployed_sha: ad4f48bbbe804b7918e3a6247c9c725f2d5aa77d
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: all contracts are fully specified by the
+    owner-approved SKILL v5.0 and the 2026-09-08 execution book; existing configs
+    already use the approved slugs.'
+  human_approved: false
+  timestamp: '2026-09-08T18:29:10.776068+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: database inventory 5+6+3, storage/manifest contract, evidence
+    contract, rule contract with authority invariants, SOURCE_MATRIX doc and the Phase
+    1 contract test suite; no parsers, no data loading, no Evidence/Rules DDL.'
+  human_approved: false
+  timestamp: '2026-09-08T18:29:10.934716+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: f08a6e59ced5b9f571f7304fb0832fe10d08c475
+  timestamp: '2026-09-08T18:35:46.091835+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 95d217ed50269acb1893f2c8eaa60814901b8a17
+  timestamp: '2026-09-08T18:40:29.857555+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint f08a6e5 complete: universal domain contracts
+    frozen for all 27 lanes (5+6+3 inventory, storage/manifest, evidence, rule contracts
+    with authority invariants, frozen SOURCE_MATRIX, 15-contract-test validation suite),
+    306 tests, ruff, config validation and secret scan clean; PR #10 foundation CI
+    SUCCESS.'
+  human_approved: false
+  timestamp: '2026-09-08T18:40:54.586585+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint f08a6e5: all eight checks OK with internally consistent registry/authority/test
+    alignment.'
+  human_approved: false
+  timestamp: '2026-09-08T18:40:54.745755+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint f08a6e5: complete blueprint conformance
+    verified across database inventory, storage/manifest contract, evidence and rule
+    contracts, authority invariants and the validation suite with negative cases;
+    306 tests re-executed. Seat provenance per D020 owner directive; MiniMax is a
+    real independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-08T18:41:32.088666+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 6c32ec513e30a036ed11e685cc495654d25fc606
+  timestamp: '2026-09-08T18:42:35.219804+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint f08a6e5: all eight adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-08T18:42:53.990603+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #10 foundation CI SUCCESS on head f08a6e5 (run
+    34264070832); all three gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-08T18:42:54.150821+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #10 squash-merged into main at ad4f48b after MERGE_READY and agent-gate
+    SUCCESS on exact head f08a6e5; main CI SUCCESS (run 34264738859).'
+  human_approved: true
+  timestamp: '2026-09-08T18:46:03.534793+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34264801553) deployed the exact
+    merged SHA: DEPLOYED_SHA=ad4f48bbbe804b7918e3a6247c9c725f2d5aa77d; idempotent
+    migration verification passed.'
+  human_approved: true
+  timestamp: '2026-09-08T18:46:03.704450+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh ad4f48b: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-08T18:46:03.874504+00:00'
+- from: verified
+  to: closed
+  evidence: 'DOMAIN-CONTRACT-001 complete: universal contracts frozen for all 27 lanes
+    (5+6+3 database inventory, storage/manifest contract, evidence contract, rule
+    contract with authority invariants, frozen SOURCE_MATRIX, 15-test validation suite),
+    full review chain (real Nebius MiniMax PASS, GLM PASS, real Nebius Nemotron QA_PASS),
+    merge gate MERGE_READY, agent-gate SUCCESS, squash merge at ad4f48b, main CI SUCCESS,
+    exact-SHA deployment verified.'
+  human_approved: true
+  timestamp: '2026-09-08T18:46:04.042170+00:00'

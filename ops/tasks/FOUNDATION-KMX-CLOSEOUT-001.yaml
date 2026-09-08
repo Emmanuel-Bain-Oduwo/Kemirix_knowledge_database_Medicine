@@ -1,0 +1,160 @@
+schema_version: 2
+task_id: FOUNDATION-KMX-CLOSEOUT-001
+phase: phase_0
+goal: 'Synchronize Git-backed memory and the KMX-SCHEMA-001 task record with the proven
+  delivery reality after PR #6 merged at main b36b909: record the merged lifecycle
+  state, the designed development-deployment deferral (runtime migration hook pending
+  DATABASE-001), the protect-main ruleset required-check context correction (D021)
+  and the owner-directed GLM writer/review seat assignment (D020). Pure governance
+  bookkeeping; no domain, migration, CI or runtime code changes.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- ops/memory/CURRENT_STATE.md
+- ops/memory/PHASE_STATUS.yaml
+- ops/memory/KNOWN_ISSUES.md
+- ops/memory/DECISIONS.md
+- ops/tasks/KMX-SCHEMA-001.yaml
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- .github
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+- src/database
+- src/storage
+- opencode.json
+- docs
+base_sha: b36b909bbfd96b59ee19343c3c39177c2a236c79
+branch: agent/glm/FOUNDATION-KMX-CLOSEOUT-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- ops/memory/CURRENT_STATE.md, PHASE_STATUS.yaml and KNOWN_ISSUES.md reflect the true
+  state after the KMX-SCHEMA-001 merge (main b36b909), including the designed development-deployment
+  deferral and the active protect-main ruleset with the corrected required-check contexts.
+- DECISIONS.md gains D020 (owner-directed GLM writer/review seat assignment), D021
+  (protect-main required-check context correction) and D022 (development migration
+  hook deferral) without rewriting prior decisions.
+- ops/tasks/KMX-SCHEMA-001.yaml in Git matches the canonical control-checkout task
+  record (status merged, commit_sha b36b909, full event history).
+- No domain code, migrations, CI workflows, runtime scripts or documentation beyond
+  ops/memory and the task record are touched.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-08T17:05:26.582737Z'
+updated_at: '2026-09-08T18:13:39.039621Z'
+completed_at: '2026-09-08T18:13:39.039626Z'
+commit_sha: f96715d9abef7ce47fa684509cbec2ee025565ac
+deployed_sha: 44db32f5ab7a03f9e53dab8b79414e968f4243ad
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: pure governance bookkeeping fully specified
+    by the canonical control-checkout state.'
+  human_approved: false
+  timestamp: '2026-09-08T17:05:39.645769+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: update ops/memory (CURRENT_STATE, PHASE_STATUS, KNOWN_ISSUES,
+    DECISIONS D020-D022) and land the canonical KMX-SCHEMA-001 task record (status
+    merged, commit b36b909) in Git through the phase_0 governance path.'
+  human_approved: false
+  timestamp: '2026-09-08T17:05:39.797662+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 4261f79d7b256b67b1867c6bfefd7d1a8f7d8552
+  timestamp: '2026-09-08T17:05:51.789082+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 0dc5dcfa4faa4e230021cf5188957fee8dad446d
+  timestamp: '2026-09-08T17:08:51.462741+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint 4261f79 complete: five allowed governance files
+    updated (memory truth-sync + canonical KMX-SCHEMA-001 task record), 273 tests,
+    ruff, config validation and secret scan clean; PR #7 foundation CI SUCCESS.'
+  human_approved: false
+  timestamp: '2026-09-08T17:10:25.881566+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 4261f79: bookkeeping matches the true delivery reality, no
+    overclaims, changes confined to the five allowed governance paths.'
+  human_approved: false
+  timestamp: '2026-09-08T17:10:26.033154+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 4261f79: five allowed paths only,
+    memory truth verified against actual delivery facts (b36b909 merge, agent-gate
+    61d8b74, main CI run 34253173041, deploy refusal by designed migration hook, ruleset
+    contexts corrected), DECISIONS D020-D022 appended without history rewrite, no
+    overclaims. Seat provenance per D020: owner directed the GLM harness to execute
+    the review seat for this phase; MiniMax cross-check is a real independent Nebius
+    run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-08T17:10:37.751857+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 2029a7f7c88c2a804a10d73a0939d63c0027594a
+  timestamp: '2026-09-08T17:11:16.912146+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 4261f79: all five adversarial checks OK (allowed paths only,
+    no deployment overclaim, DECISIONS append-only, task record accuracy, honest ruleset/deferral
+    records).'
+  human_approved: false
+  timestamp: '2026-09-08T17:11:27.913992+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #7 foundation CI SUCCESS (run 34255104623) on head
+    4261f79; all three gate-required reports (MiniMax PASS, GLM PASS, Nemotron QA_PASS)
+    bound to the same head in the canonical control checkout.'
+  human_approved: false
+  timestamp: '2026-09-08T17:11:28.075884+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #7 squash-merged into main at f96715d after MERGE_READY (all 13 checks)
+    and kemirix-agent-gate SUCCESS on exact head 4261f79; main foundation CI SUCCESS
+    (run 34255655157). Owner-directed execution per D020 with MiniMax/Nemotron as
+    real independent provider runs.'
+  human_approved: true
+  timestamp: '2026-09-08T18:13:38.569350+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Development deployment verified at main 44db32f (contains the merged
+    f96715d via PR #7): verify-runtime.sh reports DEPLOYED_SHA=44db32f, integrity
+    PASS, smoke PASS. The deferred sequential deploy of f96715d itself was superseded
+    by the auto-deploy of 44db32f during the CD-fix window; the deployed release contains
+    this task entire merged content.'
+  human_approved: true
+  timestamp: '2026-09-08T18:13:38.727724+00:00'
+- from: deployed
+  to: verified
+  evidence: 'Runtime verification at 44db32f: DEPLOYED_SHA, symlink target, release
+    integrity and offline smoke all PASS.'
+  human_approved: true
+  timestamp: '2026-09-08T18:13:38.882603+00:00'
+- from: verified
+  to: closed
+  evidence: 'FOUNDATION-KMX-CLOSEOUT-001 complete: memory truth-sync + canonical KMX-SCHEMA-001
+    task record landed through the full chain (MiniMax PASS, GLM PASS, Nemotron QA_PASS,
+    merge gate MERGE_READY, agent-gate SUCCESS, squash merge PR #7 at f96715d, main
+    CI SUCCESS), deployment verified within main 44db32f.'
+  human_approved: true
+  timestamp: '2026-09-08T18:13:39.039627+00:00'

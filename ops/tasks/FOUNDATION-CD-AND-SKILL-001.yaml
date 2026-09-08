@@ -1,0 +1,178 @@
+schema_version: 2
+task_id: FOUNDATION-CD-AND-SKILL-001
+phase: phase_0
+goal: Implement the separately approved development migration execution so the Deploy
+  development workflow can deliver executable-migration releases (the current hook
+  refuses them, leaving the CD pipeline red after KMX-SCHEMA-001), and add the explicit
+  owner-approved task mechanism that allows a phase_0 governance task to synchronize
+  the repository SKILL.md with the owner-approved blueprint. The development database
+  credentials stay outside Git in an operator-provisioned 0600 env file (/srv/kemirix/secrets/dev-postgres.env);
+  the deploy path fails closed when the file is absent, preserving the previous safety
+  semantics. No domain code, migrations or CI workflow changes.
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- scripts/runtime.py
+- src/agents/models.py
+- tests/test_runtime.py
+- tests/test_agents.py
+- docs/CI_CD.md
+- docs/AGENT_COORDINATION.md
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+- src/database
+- src/storage
+- opencode.json
+- .github
+base_sha: f96715d9abef7ce47fa684509cbec2ee025565ac
+branch: agent/glm/FOUNDATION-CD-AND-SKILL-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- scripts/runtime.py deploys executable-migration releases by executing the ready
+  prefix against the development PostgreSQL through psql using only the operator-provisioned
+  env file (DATABASE_URL parsed in-process into PG* variables, never on command lines
+  or logs), verifying PostgreSQL 17, applying from zero in a single transaction when
+  the domain schemas are absent, and verifying the already-applied table inventory
+  idempotently when they exist; missing or unsafe env file keeps the documented fail-closed
+  refusal.
+- The execution derives the ready prefix and expected tables from the release itself
+  (release venv executing scripts/migration_gate.py plan plus parsing the CREATE TABLE
+  statements of the ready files), never from hardcoded lists.
+- src/agents/models.py gains an explicit opt-in contract field owner_approved_skill_update
+  (default false); only phase_0 FOUNDATION bootstrap tasks with that flag may list
+  SKILL.md in allowed_paths and authorize SKILL.md writes; every other task keeps
+  the full protection, and tests prove both the rejection without the flag and the
+  allowance with it.
+- docs/CI_CD.md and docs/AGENT_COORDINATION.md document the development migration
+  execution (credential contract, fail-closed behavior) and the SKILL.md owner-approved
+  update mechanism.
+- Tests cover the new runtime migration execution (absent env file refuses, from-zero
+  apply, idempotent verification, foreign/partial state fails closed) and the models
+  SKILL ownership rules; CI stays green.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-08T17:31:02.678442Z'
+updated_at: '2026-09-08T18:13:55.541082Z'
+completed_at: '2026-09-08T18:13:55.541087Z'
+commit_sha: 44db32f5ab7a03f9e53dab8b79414e968f4243ad
+deployed_sha: 44db32f5ab7a03f9e53dab8b79414e968f4243ad
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the development migration execution and
+    SKILL governance mechanism are fully specified by the owner directive and existing
+    repository contracts.'
+  human_approved: false
+  timestamp: '2026-09-08T17:31:03.540634+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: runtime dev-migration execution with fail-closed credential
+    contract; models.py owner_approved_skill_update mechanism for SKILL.md through
+    phase_0 FOUNDATION tasks only; docs + tests.'
+  human_approved: false
+  timestamp: '2026-09-08T17:31:03.710146+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 5647257c9d09b32144d4aed5d5eddd8439968b88
+  timestamp: '2026-09-08T17:56:28.744811+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 632d3b40e108ed7fa2a2a33478a2d815e4f4a63d
+  timestamp: '2026-09-08T18:04:36.987062+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint 5647257 complete: development migration execution
+    with fail-closed credential contract, owner-approved SKILL.md task mechanism,
+    291 tests, ruff, config validation and secret scan clean; PR #8 foundation CI
+    SUCCESS; live read-only probe confirmed dev database PostgreSQL 17.11, empty,
+    ready for from-zero apply.'
+  human_approved: false
+  timestamp: '2026-09-08T18:04:54.443046+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 5647257: all eight checks OK (allowed files only, credential
+    safety, PostgreSQL 17 enforcement, idempotent verification, no hardcoded lists,
+    tight SKILL.md exception, protected_scope copy semantics, no secrets).'
+  human_approved: false
+  timestamp: '2026-09-08T18:04:54.599134+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 5647257: fail-closed credential contract
+    verified (in-process URL parsing, minimal psql env, suppressed errors), from-zero
+    and idempotent paths verified against the live dev database state read-only, governance
+    exception tightly scoped, in-place PROTECTED mutation bug found and fixed during
+    review, 291 tests re-executed. Seat provenance per D020 owner directive; MiniMax
+    is a real independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-08T18:05:35.385653+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 9381025dbedb562f8e398ac35bc10b8366d3052d
+  timestamp: '2026-09-08T18:06:22.510710+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 5647257: all eight adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-08T18:06:38.376118+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #8 foundation CI SUCCESS on head 5647257 (run 34260131456);
+    all three gate-required reports (MiniMax PASS, GLM PASS, Nemotron QA_PASS) bound
+    to the same head in the canonical control checkout.'
+  human_approved: false
+  timestamp: '2026-09-08T18:06:38.544823+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #8 squash-merged into main at 44db32f after MERGE_READY (all 13 checks)
+    and kemirix-agent-gate SUCCESS on exact head 5647257; main foundation CI SUCCESS
+    (run 34261134641). Owner-directed execution per D020 with MiniMax/Nemotron as
+    real independent provider runs.'
+  human_approved: true
+  timestamp: '2026-09-08T18:13:55.063273+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow deployed the exact merged SHA: DEPLOYED_SHA=44db32f5ab7a03f9e53dab8b79414e968f4243ad
+    with the new development migration execution applying migrations/001_kmx.sql from-zero
+    to the development PostgreSQL 17.11 (five kmx tables verified present). verify-runtime.sh:
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-08T18:13:55.223299+00:00'
+- from: deployed
+  to: verified
+  evidence: 'Runtime verification at the exact merged SHA 44db32f: DEPLOYED_SHA ==
+    expected, symlink target correct, release intact, offline smoke PASS, development
+    database carries the applied kmx schema; the red Deploy development workflow is
+    now SUCCESS for executable-migration releases.'
+  human_approved: true
+  timestamp: '2026-09-08T18:13:55.383581+00:00'
+- from: verified
+  to: closed
+  evidence: 'FOUNDATION-CD-AND-SKILL-001 complete: development migration execution
+    (fail-closed operator-provisioned credential contract, from-zero single-transaction
+    apply, idempotent verification, DATABASE-001 guard for multi-migration upgrades)
+    and the owner-approved SKILL.md task mechanism, delivered through the full chain
+    (MiniMax PASS, GLM PASS, Nemotron QA_PASS, merge gate MERGE_READY, agent-gate
+    SUCCESS, squash merge PR #8 at 44db32f, main CI SUCCESS, exact-SHA deployment
+    verified with the kmx schema applied).'
+  human_approved: true
+  timestamp: '2026-09-08T18:13:55.541088+00:00'
