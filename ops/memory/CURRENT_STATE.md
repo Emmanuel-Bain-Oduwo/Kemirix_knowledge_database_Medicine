@@ -40,18 +40,45 @@ tests are not external provider PASS reports.
 
 ## Pending
 
-- Owner-side main protection, required-check configuration (foundation +
-  kemirix-agent-gate), GitHub auto-merge enablement and automatic head-branch
-  deletion remain owner-side GitHub configuration. Successful gated merges do
-  not establish those settings.
+- Main protection is now ACTIVE (protect-main ruleset, created 2026-09-08 13:04):
+  squash-only merges, required checks `foundation` + `kemirix-agent-gate`, linear
+  history, no force pushes, branches up to date. The required-status-check
+  contexts were corrected 2026-09-08 from an accidental joined-context entry
+  ("foundation kemirix-agent-gate") to the two documented separate contexts
+  (D021). GitHub auto-merge feature enablement and automatic head-branch
+  deletion remain owner-side; gated squash merges are executed by the delivery
+  automation after all gates pass.
+- Development deployment of executable-migration releases is refused BY DESIGN
+  by scripts/runtime.py until the separately approved development migration
+  execution exists (roadmap DATABASE-001). KMX-SCHEMA-001 merged at main
+  b36b909 without a development deployment; the development runtime stays on
+  the healthy 744156d release and the refused incomplete b36b909 release
+  directory was quarantined (D022). After the migration runner lands, re-run
+  the Deploy development workflow for the pending main SHAs.
 - DBeaver verification remains unverified; full five-agent worktree/access
   separation is not yet applied (single control VM, one active writer worktree).
-- Codex CLI login smoke remains pending (structural validation only).
+- Codex CLI login is functional (ChatGPT-authenticated); an inference smoke
+  remains structurally validated only.
 
 ## Phase 1
 
-Production database/domain implementation has started: KMX-SCHEMA-001 is the
-active phase_1 task (executable kmx schema DDL first). Until it lands, domain
-modules (src/kmx, src/evidence, src/rules, src/sources) and the three migrations
-remain non-executable placeholders. No clinical approval or production domain
-deployment is claimed.
+KMX-SCHEMA-001 is MERGED at main b36b909bbfd96b59ee19343c3c39177c2a236c79
+(PR #6, branch agent/glm/KMX-SCHEMA-001). It delivered reviewed executable
+PostgreSQL 17 DDL for the five kmx tables aligned to the owner-approved
+2026-09-08 blueprints: container/member containment (container_kmx_id,
+member_kmx_id, relationship_type, ordinal), lane_id (S01-S27) separated from
+source_id slugs, recordable external-identifier conflicts (no global unique
+binding; conflicts fail closed into kmx.mapping_exception), full
+mapping_exception provenance (source/version/record/reason/candidate/review),
+registry normalized_name/updated_at, lookup-only name_index, and migration 001
+independent of future Evidence tables. Review chain proven: MiniMax-M3
+cross-check PASS (real Nebius run), GLM review PASS, Nemotron 3 Ultra QA_PASS
+(real Nebius run), merge gate MERGE_READY (all 13 checks), kemirix-agent-gate
+SUCCESS on exact head 61d8b74, main foundation CI SUCCESS on b36b909 including
+the migration-from-zero gate on hosted PostgreSQL 17. The writer seat is glm
+(human-approved handoff from codex at checkpoint fb3109d, owner directive
+2026-09-08); the glm review seat was executed by the same GLM 5.3 harness under
+that explicit owner directive with the two independent provider seats remaining
+real Nebius runs (D020). DOMAIN-CONTRACT-001 (Phase 1 contract freeze) is the
+active next task. No clinical approval or production domain deployment is
+claimed.
