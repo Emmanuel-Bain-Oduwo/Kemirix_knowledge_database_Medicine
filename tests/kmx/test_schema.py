@@ -59,9 +59,7 @@ def test_ddl_is_migration_safe():
         ).strip()
         if body:
             statements.append(body)
-    assert all(
-        s.startswith(("CREATE ", "COMMENT ON ")) for s in statements
-    ), statements
+    assert all(s.startswith(("CREATE ", "COMMENT ON ")) for s in statements), statements
 
 
 def test_kmx_id_format():
