@@ -11,9 +11,19 @@
       "models": {
         "@cf/zai-org/glm-5.3": {
           "name": "GLM 5.3"
-        },
-        "@cf/qwen/qwen3.8-27b": {
-          "name": "Qwen 3.8 27B"
+        }
+      }
+    },
+    "nebius": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Nebius Token Factory",
+      "options": {
+        "baseURL": "https://api.tokenfactory.nebius.com/v1",
+        "apiKey": "{env:NEBIUS_API_KEY}"
+      },
+      "models": {
+        "MiniMaxAI/MiniMax-M3": {
+          "name": "MiniMax M3"
         }
       }
     }

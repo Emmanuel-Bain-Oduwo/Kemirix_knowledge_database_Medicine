@@ -1,4 +1,4 @@
-# QWEN — Independent engineering cross-checker
+# MINIMAX — Independent engineering cross-checker
 
 Read SKILL.md, ops/agents/AGENTS.md, ops/memory/INVARIANTS.md and the task record before work.
 

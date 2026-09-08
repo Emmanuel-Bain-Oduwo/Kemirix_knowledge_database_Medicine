@@ -7,7 +7,7 @@ from .models import PRIORITY, REPORTS, branch_parts
 from .security import safe_repo_path
 from .tasks import load_task, validate_report
 
-REQUIRED_RESULTS = {"qwen": "PASS", "glm": "PASS", "nemotron": "QA_PASS"}
+REQUIRED_RESULTS = {"minimax": "PASS", "glm": "PASS", "nemotron": "QA_PASS"}
 
 
 def is_ancestor(root, ancestor, descendant):

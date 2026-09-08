@@ -10,14 +10,14 @@ from agents.providers import ProviderError, SmokeResult, provider_for
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--provider", choices=["codex", "kimi", "nemotron", "glm", "qwen"])
+    group.add_argument("--provider", choices=["codex", "kimi", "nemotron", "glm", "minimax"])
     group.add_argument("--all", action="store_true")
     parser.add_argument("--timeout", type=float, default=30)
     args = parser.parse_args()
     if not 0 < args.timeout <= 120:
         parser.error("timeout must be between 0 and 120 seconds")
     failed = False
-    for role in ["codex", "kimi", "nemotron", "glm", "qwen"] if args.all else [args.provider]:
+    for role in ["codex", "kimi", "nemotron", "glm", "minimax"] if args.all else [args.provider]:
         try:
             provider = provider_for(role, timeout=args.timeout)
             result = (

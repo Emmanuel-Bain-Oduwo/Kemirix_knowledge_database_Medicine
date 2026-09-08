@@ -6,11 +6,11 @@ The Python coordinator is foreground deterministic software, not an AI authority
 | --- | --- | --- | --- |
 | CODEX | Primary implementation writer | final-summary.md | Factual checkpoint and validation |
 | KIMI | Source/data analyst | kimi-analysis.md | ANALYSIS_COMPLETE or BLOCKED |
-| QWEN | Independent cross-check | qwen-crosscheck.md | PASS or REQUEST_CHANGES |
+| MINIMAX | Independent cross-check | minimax-crosscheck.md | PASS or REQUEST_CHANGES |
 | GLM | Architecture/code review | glm-review.md | PASS or REQUEST_CHANGES; CRITICAL/MAJOR/MINOR |
 | NEMOTRON | Adversarial QA | nemotron-qa.md | QA_PASS or QA_FAIL |
 
-All report paths are under ops/reports/<task-id>/. Reports begin with the status on the first line and include findings and check evidence. No reviewer may approve Clinical Evidence. Reports are not fabricated or populated with passing statuses before a real review. The engineering harness chain is Codex + GPT-6 Astra (primary), OpenCode + GLM 5.3 (first fallback) and OpenCode + Qwen 3.8 (second fallback); switching harnesses is an explicit human-approved writer handoff that preserves the same task, branch, base/HEAD SHA, Git-backed memory, reports and deterministic coordinator state (see [failover](AGENT_FAILOVER.md)).
+All report paths are under ops/reports/<task-id>/. Reports begin with the status on the first line and include findings and check evidence. No reviewer may approve Clinical Evidence. Reports are not fabricated or populated with passing statuses before a real review. The engineering harness chain is Codex + GPT-6 Astra (primary), OpenCode + GLM 5.3 (first fallback) and OpenCode + MiniMax-M3 (second fallback); switching harnesses is an explicit human-approved writer handoff that preserves the same task, branch, base/HEAD SHA, Git-backed memory, reports and deterministic coordinator state (see [failover](AGENT_FAILOVER.md)).
 
 Task lifecycle:
 
@@ -21,7 +21,7 @@ created -> research -> implementation -> crosscheck -> review -> qa
 qa -> ci -> awaiting_human -> merged -> deployed -> verified -> closed
 ```
 
-Crosscheck/review/QA can request fixes; fixes repeat independent reviews. Kimi research is required only when the task contract declares `research_required: true`. Missing or failed reports block advancement. The coordinator also provides a deterministic `merge-gate` command that mechanically evaluates PR merge-readiness (correct task, valid contract, expected branch/base SHA, active writer, required reports, Qwen/GLM/Nemotron results, required tests, CI pass, no unresolved blockers) and fails closed; no LLM decides the mechanical gate. For merge/deploy/verify/close transitions, explicit human attestation and exact commit/deployed SHAs are required. The CLI records attested evidence; it does not independently query GitHub or deploy as a side effect of a status update. The operator must provide actual verification references, not invented PASS claims.
+Crosscheck/review/QA can request fixes; fixes repeat independent reviews. Kimi research is required only when the task contract declares `research_required: true`. Missing or failed reports block advancement. The coordinator also provides a deterministic `merge-gate` command that mechanically evaluates PR merge-readiness (correct task, valid contract, expected branch/base SHA, active writer, required reports, MiniMax/GLM/Nemotron results, required tests, CI pass, no unresolved blockers) and fails closed; no LLM decides the mechanical gate. For merge/deploy/verify/close transitions, explicit human attestation and exact commit/deployed SHAs are required. The CLI records attested evidence; it does not independently query GitHub or deploy as a side effect of a status update. The operator must provide actual verification references, not invented PASS claims.
 
 Task YAML records one production_writer/active_writer, researcher, cross_checker, reviewer, validator, frozen writer priority, allowed/forbidden paths, exact base SHA, branch, criteria/tests, timestamps, status and commit/deployed SHAs. Path scopes use exact files or directory prefixes, never arbitrary globs or repository-wide ownership. Required test profiles are foundation, integration and contract; commands from model-written YAML are never executed as shell code.
 

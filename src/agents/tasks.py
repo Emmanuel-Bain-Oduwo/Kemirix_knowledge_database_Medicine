@@ -85,7 +85,7 @@ def validate_report(text, role):
     ensure_no_secrets(text)
     allowed = {
         "kimi": ["ANALYSIS_COMPLETE", "BLOCKED"],
-        "qwen": ["PASS", "REQUEST_CHANGES"],
+        "minimax": ["PASS", "REQUEST_CHANGES"],
         "glm": ["PASS", "REQUEST_CHANGES"],
         "nemotron": ["QA_PASS", "QA_FAIL"],
     }
@@ -114,7 +114,7 @@ def transition(root, task_id, target, evidence, human=False, commit_sha=None, de
             raise ValueError("invalid lifecycle transition")
         role_gate = {
             "research": ("kimi", "ANALYSIS_COMPLETE"),
-            "crosscheck": ("qwen", "PASS"),
+            "crosscheck": ("minimax", "PASS"),
             "review": ("glm", "PASS"),
             "qa": ("nemotron", "QA_PASS"),
         }

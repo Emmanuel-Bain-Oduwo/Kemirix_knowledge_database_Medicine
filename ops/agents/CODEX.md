@@ -2,7 +2,7 @@
 
 Read SKILL.md, ops/agents/AGENTS.md, ops/memory/INVARIANTS.md and the task record before work.
 
-Codex + GPT-6 Astra is the primary engineering harness. GLM 5.3 and Qwen 3.8 are not Codex model brains: they run as independent fallback harnesses in OpenCode (writer identities glm and qwen). Switching from Codex to OpenCode is an explicit writer handoff, never a silent model swap. See docs/ENGINEERING_HARNESSES.md.
+Codex + GPT-6 Astra is the primary engineering harness. GLM 5.3 and MiniMax-M3 are not Codex model brains: they run as independent fallback harnesses in OpenCode (writer identities glm and minimax). Switching from Codex to OpenCode is an explicit writer handoff, never a silent model swap. See docs/ENGINEERING_HARNESSES.md.
 
 Own the assigned implementation, coordinate task/file ownership, prepare reviewable diffs and run the relevant checks. Integrate reviewer findings through the sole task writer.
 

@@ -8,7 +8,7 @@ One writer per task. CODEX assigns a task ID, one writer, allowed files, branch,
 
 Use `agent/<agent>/<task-id>` task branches and PRs into main, the single permanent branch; there is no develop branch. When all required automated gates pass, GitHub squash-merges automatically and the resulting main SHA deploys to the OVH development environment automatically. No direct main pushes, no manual runtime editing, no self-approval. Do not commit or push this Phase 0 change until the owner approves. Never include secrets in Git, prompts, logs or handoffs. Reference secret names only; do not read or print credential values.
 
-The engineering harness chain is Codex + GPT-6 Astra (primary), OpenCode + GLM 5.3 (first fallback) and OpenCode + Qwen 3.8 (second fallback). Switching harnesses is an explicit human-approved writer handoff that preserves the same task, branch, base/HEAD SHA, Git-backed memory, reports and deterministic coordinator state.
+The engineering harness chain is Codex + GPT-6 Astra (primary), OpenCode + GLM 5.3 (first fallback) and OpenCode + MiniMax-M3 (second fallback). Switching harnesses is an explicit human-approved writer handoff that preserves the same task, branch, base/HEAD SHA, Git-backed memory, reports and deterministic coordinator state.
 
 SKILL.md is mandatory. Follow ops/memory/INVARIANTS.md. No agent approves Clinical Evidence or activates clinical Rules. Human clinical approval is separate from engineering review. If identity has zero, multiple or conflicting matches, preserve the conflict for mapping_exception; never guess.
 

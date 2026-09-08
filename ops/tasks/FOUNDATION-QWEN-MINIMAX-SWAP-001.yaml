@@ -1,0 +1,118 @@
+schema_version: 2
+task_id: FOUNDATION-QWEN-MINIMAX-SWAP-001
+phase: phase_0
+goal: 'Eliminate the qwen naming from the engineering system: the cross-checker and
+  second-fallback-writer role is renamed qwen -> minimax (Agent literal, frozen writer
+  priority, report filename minimax-crosscheck.md, merge-gate requirements, env var
+  MINIMAX_MODEL, branch patterns, role doc, tests, task contracts and docs), and the
+  seat executes MiniMax-M3 (MiniMaxAI/MiniMax-M3) through the Nebius endpoint with
+  Cloudflare serving only the glm role.'
+production_writer: codex
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: codex
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- src/agents
+- tests
+- scripts
+- opencode.json
+- docs/AGENT_COORDINATION.md
+- docs/AGENT_FAILOVER.md
+- docs/OPERATING_MODEL.md
+- docs/ENGINEERING_HARNESSES.md
+- docs/AGENT_MEMORY.md
+- docs/DEVELOPMENT_WORKFLOW.md
+- docs/CI_CD.md
+- ops/agents
+- ops/tasks
+- ops/providers/README.md
+- ops/memory/CURRENT_STATE.md
+- ops/memory/PHASE_STATUS.yaml
+- ops/memory/KNOWN_ISSUES.md
+- ops/memory/DECISIONS.md
+- ops/tasks/FOUNDATION-QWEN-MINIMAX-SWAP-001.yaml
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+base_sha: 7882b81cdb0d16653ee3b6c43eca4d893f793526
+branch: agent/codex/FOUNDATION-QWEN-MINIMAX-SWAP-001
+research_required: false
+acceptance_criteria:
+- 'The cross-checker role is named minimax everywhere: Agent literal, frozen writer
+  priority (codex -> glm -> minimax -> kimi), REPORTS filename minimax-crosscheck.md,
+  merge-gate and transition role gates, branch patterns, MINIMAX_MODEL environment
+  variable, role document and documentation; no qwen naming remains in active code,
+  tests, contracts or docs.'
+- The minimax role executes through the Nebius adapter with MiniMax-M3 (MiniMaxAI/MiniMax-M3);
+  the Cloudflare adapter serves only the glm role.
+- The second fallback harness profile runs OpenCode with MiniMax-M3 via Nebius under
+  writer minimax; handoff semantics remain unchanged.
+- Existing provider smoke and structural validation behavior remains functional for
+  all five roles.
+- Historical task contracts are migrated to the minimax vocabulary so they remain
+  loadable; report paths and evidence for already-gated checkpoints remain auditable.
+- Relevant automated tests cover the renamed role and new provider mapping.
+- No KMX, Evidence, Rules, source-ingestion, migrations or clinical domain code is
+  introduced.
+required_tests:
+- foundation
+status: fixes
+created_at: '2026-09-08T07:23:36.821113Z'
+updated_at: '2026-09-08T07:42:00.859325+00:00'
+completed_at: null
+commit_sha: f9ba0f639d8a96d1b639e0dd69406f22bd20b439
+deployed_sha: null
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: Provider-swap engineering change on existing architecture; no external
+    source/data research required.
+  human_approved: false
+  timestamp: '2026-09-08T07:23:42.764310+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: qwen seat moves to Nebius MiniMax-M3; providers.py MODELS
+    + adapter role checks, harness registry, opencode.json, tests, docs and memory;
+    no role-name or gate changes.'
+  human_approved: false
+  timestamp: '2026-09-08T07:23:42.917675+00:00'
+- operation: checkpoint
+  role: codex
+  commit_sha: f9ba0f639d8a96d1b639e0dd69406f22bd20b439
+  timestamp: '2026-09-08T07:28:02.403133+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Exact checkpoint f9ba0f6 implemented, committed and pushed; PR #4 open
+    with foundation CI SUCCESS; 158 local tests, Ruff/format/config/secret scan clean;
+    real provider smoke PASS for both qwen (Nebius MiniMax-M3) and glm (Cloudflare).'
+  human_approved: false
+  timestamp: '2026-09-08T07:31:40.873566+00:00'
+- from: crosscheck
+  to: fixes
+  evidence: 'Owner-directed scope expansion during crosscheck: eliminate the qwen
+    naming entirely. The cross-checker role is renamed qwen -> minimax (Agent literal,
+    PRIORITY, REPORTS filename minimax-crosscheck.md, gate requirements, env var MINIMAX_MODEL,
+    role doc, docs, tests, task contracts); MiniMax-M3 via Nebius remains the executing
+    model. Contract broadened accordingly; the expanded checkpoint requires renewed
+    independent review.'
+  human_approved: false
+  timestamp: '2026-09-08T07:41:15.787143+00:00'
+- operation: contract_expanded
+  role: codex
+  evidence: 'Owner directive: no qwen naming anywhere; role renamed qwen -> minimax
+    with MiniMax-M3 via Nebius. Contract broadened at fixes status; expanded checkpoint
+    requires renewed independent review.'
+  timestamp: '2026-09-08T07:42:00.859325+00:00'

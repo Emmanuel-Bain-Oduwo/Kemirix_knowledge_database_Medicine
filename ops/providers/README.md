@@ -5,9 +5,9 @@ CodexExternalWriter uses the installed Codex CLI's `--version` and `login status
 | Role | Adapter | Default model | Environment references |
 | --- | --- | --- | --- |
 | KIMI | Nebius | moonshotai/Kimi-K3 | NEBIUS_API_KEY, optional NEBIUS_BASE_URL, KIMI_MODEL |
-| NEMOTRON | Nebius | nvidia/nemotron-3-ultra-550b-a55b | NEBIUS_API_KEY, optional NEBIUS_BASE_URL, NEMOTRON_MODEL |
+| NEMOTRON | Nebius | nvidia/Nemotron-3-Ultra-550b-a55b | NEBIUS_API_KEY, optional NEBIUS_BASE_URL, NEMOTRON_MODEL |
 | GLM | Cloudflare | @cf/zai-org/glm-5.3 | CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, GLM_MODEL |
-| QWEN | Cloudflare | @cf/qwen/qwen3.8-27b | CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, QWEN_MODEL |
+| MINIMAX | Nebius | MiniMaxAI/MiniMax-M3 | NEBIUS_API_KEY, optional NEBIUS_BASE_URL, MINIMAX_MODEL |
 
 These are the owner's requested identifiers. Availability and entitlement are unverified; do not silently substitute another model. Nebius defaults to its official Token Factory /v1 endpoint and allows explicit official legacy endpoints; configure the account's endpoint VM-side if needed. Cloudflare uses the Workers AI REST run endpoint. No SDK or model framework is added.
 

@@ -9,14 +9,14 @@ goal: 'Complete the Kemirix engineering foundation by wiring the existing determ
   '
 production_writer: codex
 researcher: kimi
-cross_checker: qwen
+cross_checker: minimax
 reviewer: glm
 validator: nemotron
 active_writer: codex
 writer_priority:
 - codex
 - glm
-- qwen
+- minimax
 - kimi
 allowed_paths:
 - src/agents
@@ -57,11 +57,11 @@ acceptance_criteria:
 - Relevant automated tests cover the new gate publication behavior.
 required_tests:
 - foundation
-status: implementation
+status: ci
 created_at: '2026-09-08T04:29:32.272021Z'
-updated_at: '2026-09-08T04:29:32.572465Z'
+updated_at: '2026-09-08T08:12:04.607527+00:00'
 completed_at: null
-commit_sha: null
+commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
 deployed_sha: null
 handoffs: []
 events:
@@ -76,3 +76,111 @@ events:
   evidence: Closeout scope is frozen and ready for implementation.
   human_approved: false
   timestamp: '2026-09-08T04:29:32.572470+00:00'
+- operation: checkpoint
+  role: codex
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  timestamp: '2026-09-08T05:15:42.959866+00:00'
+- operation: optional_kimi_rehearsal
+  role: kimi
+  result: ANALYSIS_COMPLETE
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  evidence: Real Nebius API review of exact Git-exported checkpoint; canonical kimi-analysis.md.
+    Initial malformed response was rejected; complete second response recorded. Optional
+    rehearsal, not a merge requirement.
+  timestamp: '2026-09-08T05:26:19.169070+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: Exact checkpoint ready for independent Qwen review; optional real Kimi
+    rehearsal completed without blockers.
+  human_approved: false
+  timestamp: '2026-09-08T05:26:19.176726+00:00'
+- operation: external_rehearsal_blocked
+  role: qwen
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  evidence: 'Actual Cloudflare execution: initial timeout; bounded retry failed with
+    adapter category invalid_request. No Qwen output returned. Chain stopped; GLM/Nemotron,
+    merge gate and publication not run. See final-summary.md.'
+  timestamp: '2026-09-08T05:32:18.053874+00:00'
+- from: crosscheck
+  to: review
+  evidence: Real Cloudflare Qwen 3.8 cross-check of exact checkpoint db709d7 via compact
+    bounded 57.7KB context (previous 230KB request had failed with HTTP 408; retry
+    completed in 19.6s, finish_reason stop). Report PASS with no change requests;
+    recorded at ops/reports/FOUNDATION-CLOSEOUT-001/qwen-crosscheck.md and validated
+    by the deterministic report validator.
+  human_approved: false
+  timestamp: '2026-09-08T06:14:15.435827+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM 5.3 architecture and code review of exact checkpoint db709d7 (OpenCode
+    GLM harness, full repository read access): PASS with MINOR non-blocking observations
+    only, no MAJOR or CRITICAL findings. Recorded at ops/reports/FOUNDATION-CLOSEOUT-001/glm-review.md
+    and validated by the deterministic report validator and merge-gate binding rules.'
+  human_approved: false
+  timestamp: '2026-09-08T06:18:50.942506+00:00'
+- from: qa
+  to: ci
+  evidence: Real Nebius Nemotron 3 Ultra adversarial static QA of exact checkpoint
+    db709d7 via compact bounded 65.2KB context (reasoning model; full thinking completed
+    within 20000-token budget, 20.4s, final report in content). Result QA_PASS with
+    no counterexamples found; recorded at ops/reports/FOUNDATION-CLOSEOUT-001/nemotron-qa.md
+    and validated by the deterministic report validator and merge-gate binding rules.
+  human_approved: false
+  timestamp: '2026-09-08T06:23:23.851770+00:00'
+- operation: external_rehearsal_completed
+  role: qwen
+  result: PASS
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  evidence: Real Cloudflare Qwen 3.8 cross-check of exact checkpoint via compact bounded
+    ~58KB context; thinking disabled through the documented chat_template_kwargs parameter
+    because thinking mode exceeds the provider wall clock at this context size. Report
+    re-issued by Qwen itself in gate-compliant single-line Findings/Checks format
+    after the first PASS response used bare headers rejected by the binding rules.
+  timestamp: '2026-09-08T06:26:14.165689+00:00'
+- operation: external_rehearsal_completed
+  role: glm
+  result: PASS
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  evidence: GLM 5.3 architecture and code review (OpenCode GLM fallback harness with
+    full repository read access) of exact checkpoint; PASS with MINOR non-blocking
+    observations only, no MAJOR or CRITICAL findings.
+  timestamp: '2026-09-08T06:26:14.165689+00:00'
+- operation: external_rehearsal_completed
+  role: nemotron
+  result: QA_PASS
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  evidence: Real Nebius Nemotron 3 Ultra adversarial static QA of exact checkpoint
+    via compact bounded 65.2KB context; reasoning model, 20000-token completion budget
+    so reasoning completes and the final report is returned in content. Configured
+    model id nvidia/nemotron-3-ultra-550b-a55b returns 404; corrected endpoint id
+    nvidia/Nemotron-3-Ultra-550b-a55b used for this run (operator should fix /etc/kemirix/agents.env).
+  timestamp: '2026-09-08T06:26:14.165689+00:00'
+- operation: agent_gate_published
+  role: codex
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  evidence: Deterministic merge gate MERGE_READY (all 13 checks true) after Qwen PASS,
+    GLM PASS, Nemotron QA_PASS, 260 local tests and live GitHub CI verification; publish_gate
+    independently verified PR identity and check-runs/workflow evidence and published
+    kemirix-agent-gate success on PR 3 head db709d7. No merge performed; auto-merge
+    remains disabled.
+  timestamp: '2026-09-08T06:26:14.165689+00:00'
+- operation: external_rehearsal_deepened
+  role: nemotron
+  result: QA_PASS
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  evidence: 'Deep-context re-run at operator request: full 266,495-byte context (exact
+    diff plus complete checkpoint copies of all agent modules, coordinator, tests,
+    CI workflows, docs, memory, INVARIANTS and SKILL.md) with a 32,000-token completion
+    budget; completed in 4.5s. Same QA_PASS verdict as the compact 65.2KB run; deep
+    report recorded as canonical.'
+  timestamp: '2026-09-08T06:47:39.898211+00:00'
+- operation: report_rebound
+  role: minimax
+  result: PASS
+  commit_sha: db709d7c997a0af68bb7c4f5265c9ab6b02eb02b
+  evidence: 'Role-vocabulary re-execution for gate consistency after the qwen -> minimax
+    rename: real Nebius MiniMax-M3 cross-check of exact checkpoint db709d7 with the
+    same verdict as the original qwen-role report; recorded as minimax-crosscheck.md.
+    The historical qwen-crosscheck.md remains as the audit evidence for the already-published
+    kemirix-agent-gate on PR 3.'
+  timestamp: '2026-09-08T08:12:04.607527+00:00'
