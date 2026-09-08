@@ -1,0 +1,32 @@
+# Frozen Rule contract (DOMAIN-CONTRACT-001, owner-approved SKILL v5.0
+# sections 13/14 and the execution book section 8).
+rule_contract:
+  outcomes:
+    - MATCH
+    - NO_MATCH
+    - CANNOT_FULLY_EVALUATE
+  outcome_rules:
+    - "missing required patient data returns CANNOT_FULLY_EVALUATE, never NO_MATCH"
+    - "wrong formulation or product returns NO_MATCH for clinical drug/product Rules"
+  eligibility:
+    - "Rules are created only from approved, eligible, executable Evidence"
+    - "only primary regulatory/guideline Evidence may create Rules"
+    - "identity, catalogue and support sources never independently create Rules"
+    - "a Rule candidate requires patient trigger, clinical decision and action all present"
+  inheritance:
+    rule_target_kmx_id: evidence_kmx_subject
+    rule_target_level: evidence_truth_level
+    rule_category: evidence_category
+    rule_jurisdiction: evidence_jurisdiction
+    rules:
+      - "inheritance is immutable: target KMX, level, category and jurisdiction copy the approved Evidence"
+      - "the Rule builder never resolves medicine identity again"
+      - "supporting biomedical sources never independently change high-stakes clinical action; they may only support explanation fields"
+  authority_invariants:
+    - "S07 openfda_label is a structured projection of duplicate upstream label content and is never an independent clinical vote over that content"
+    - "S11 knmf remains authority-gated until an approved official copy and rights status are pinned"
+    - "S16 inxight excludes supplier/vendor sourcing data (frdb-sourcing is never ingested)"
+    - "S20 chembl resolves the current approved ChEMBL release dynamically; release numbers are never hardcoded"
+    - "S16-S24 supporting lanes never independently create prescribing authority"
+    - "S26 ema and S27 mhra are regulatory primary lanes when their Evidence is executable"
+    - "duplicate projections of the same upstream label/document are not independent clinical votes"

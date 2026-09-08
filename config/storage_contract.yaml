@@ -1,0 +1,74 @@
+# Frozen Object Storage contract (DOMAIN-CONTRACT-001, owner-approved
+# blueprints 2026-09-08: SKILL v5.0 sections 10/11 and the execution book).
+# Object Storage is the immutable raw vault; PostgreSQL is the normalized
+# knowledge authority. This file is the machine-checked contract.
+storage_contract:
+  object_key_pattern: "^<source_id>/<source_version>/<source_record_key>/original/<original_filename>$"
+  object_key_rules:
+    - "source_id is the stable implementation slug (for example dailymed); S01-S27 lane IDs never appear in object keys"
+    - "lane_id is preserved inside the manifest, not in the object key"
+    - "bulk releases use the literal record key __release__"
+    - "keys are deterministic: the same source version and record always produce the same key"
+  manifest_filename: manifest.json
+  manifest:
+    schema_version: 1
+    required_fields:
+      - schema_version
+      - lane_id
+      - source_id
+      - source_version
+      - source_record_key
+      - acquisition_mode
+      - fetched_at
+      - upstream_published_at
+      - adapter_git_sha
+      - rights_status
+      - parse_status
+      - artifacts
+    artifact_required_fields:
+      - artifact_type
+      - original_filename
+      - content_type
+      - byte_size
+      - object_key
+      - sha256
+    forbidden_manifest_fields:
+      - api_key
+      - api_token
+      - password
+      - secret
+      - credential
+      - presigned_url
+      - bearer_token
+      - database_url
+  acquisition_modes:
+    - api
+    - bulk
+    - db
+    - pdf
+    - web
+    - manual
+  rights_statuses:
+    - cleared
+    - pending_review
+    - restricted
+  parse_statuses:
+    - staged
+    - parsed
+    - quarantined
+  upload_semantics:
+    - "download to a temporary file first, then calculate SHA-256"
+    - "HEAD the object before upload"
+    - "absent object is uploaded"
+    - "same hash is an idempotent success"
+    - "a different hash is rejected and quarantined; never overwrite an immutable original with different bytes"
+    - "the manifest is uploaded last, only after every artifact is stored"
+    - "original bytes are preserved exactly; parsing never modifies originals"
+  version_semantics:
+    - "source_version identifies one immutable upstream version"
+    - "the combination source_id + scope (record key) + version uniquely identifies one immutable upstream version"
+  record_key_semantics:
+    - "source_record_key is the stable record identifier within the source version (SETID for DailyMed labels, __release__ for bulk releases, document identifiers for PDF lanes)"
+  authority_rules:
+    - "Object Storage is never the clinical authority"
+    - "kmx normalized truth, clinical evidence and clinical rules are never stored as storage authority"

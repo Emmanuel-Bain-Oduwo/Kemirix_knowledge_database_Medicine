@@ -1,0 +1,88 @@
+# Frozen Evidence contract (DOMAIN-CONTRACT-001, owner-approved SKILL v5.0
+# sections 5/6/7 and the execution book sections 7.1-7.6).
+evidence_contract:
+  statuses:
+    - draft
+    - approved
+    - stale
+    - retired
+  status_rules:
+    - "no model may clinically approve Evidence; approval is a human authority"
+    - "source refreshes mark superseded Evidence stale, never silently overwrite"
+  evidence_support:
+    required_fields:
+      - evidence_id
+      - block_id
+      - support_role
+      - ordinal
+    rules:
+      - "one Clinical Evidence package cites blocks from exactly one source version"
+      - "separate sources remain separate Evidence packages; never blend source text"
+      - "multi-evidence support for one Rule belongs in rules.rule_evidence"
+  block_subject:
+    required_fields:
+      - block_id
+      - join_kmx_id
+      - join_level
+      - resolver_method
+      - mapping_status
+    rules:
+      - "block_subject records the deterministic mechanical block/KMX join only"
+  source_block:
+    required_fields:
+      - block_id
+      - source_version_id
+      - source_record_key
+      - block_type
+      - native_section_code
+      - native_heading
+      - locator
+      - raw_text
+      - structured_payload
+      - object_storage_key
+      - artifact_sha256
+      - block_sha256
+      - parse_status
+      - ocr_used
+      - parser_version
+    rules:
+      - "a source block is the smallest source-preserving retrieval unit"
+      - "page, heading, section code, table header, row context and source order are preserved"
+  clinical_evidence:
+    required_fields:
+      - evidence_id
+      - source_version_id
+      - kmx_subject
+      - truth_level
+      - category
+      - jurisdiction
+      - clinical_context
+      - recommendations
+      - patient_risk_factors
+      - monitoring
+      - alternatives
+      - follow_up
+      - evidence_hash
+      - status
+      - reviewed_by
+      - reviewed_at
+    rules:
+      - "Evidence is source-specific, source-version-specific, KMX-specific, category-specific and jurisdiction-specific"
+      - "Evidence never silently blends sources"
+      - "alternatives, monitoring and follow_up absent from connected Evidence are stored as not_specified_by_connected_evidence"
+  join_level:
+    values:
+      - ingredient
+      - clinical_drug
+      - product
+    meaning: "the KMX level where the source mechanically connected"
+  truth_level:
+    values:
+      - ingredient
+      - clinical_drug
+      - product
+    meaning: "the KMX level the complete Evidence package actually applies to"
+  join_truth_rules:
+    - "join_level and truth_level are always stored separately"
+    - "a document may join at product while its clinical truth belongs to ingredient or clinical drug"
+    - "Rules inherit the Evidence truth KMX and never remap medicine identity"
