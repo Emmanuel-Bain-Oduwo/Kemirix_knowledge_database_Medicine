@@ -1,0 +1,14 @@
+PASS
+Task-ID: PHASE1-2-CONTRACT-HARDENING-001
+Head-SHA: 85b0ecbccd39e7a04a08d92648ff71823321d3df
+Role: minimax
+
+1: OK - model_validator binds every artifact object_key to build_object_key(source_id, source_version, source_record_key, original_filename) and raises StorageContractError on mismatch; existing sha256/byte-size/non-negative/lane/slug/controlled-value/extra=forbid validators untouched.
+2: OK - clinical_rule freezes exactly 24 required_fields, rule_evidence freezes the 5-field inventory, rule_test freezes the 7-field inventory, outcomes are MATCH/NO_MATCH/CANNOT_FULLY_EVALUATE with all-trigger MATCH, missing-data CANNOT_FULLY_EVALUATE, wrong-formulation NO_MATCH, and immutable Evidence inheritance with no-remap invariant.
+3: OK - source_rule_policies is the single canonical S01-S27 map (S06 true, S11 executable_recommendations_only, S13 actionable guidance only, S14 explicit_computable_recommendations_only, S15 guideline_recommendations, S19 false_initially, S07 false) and src/sources/config.py rejects any non-(False|"false_initially") rules value on non-primary lanes.
+4: OK - docs/OBJECT_STORAGE.md documents the five-segment layout, uses __release__ for all five bulk examples (chembl, drugcentral, onsides, open_targets, rxnorm_athena), enumerates every frozen manifest/artifact field, keeps lane_id manifest-only with source_id in the key, and states the immutable-vault vs PostgreSQL authority boundary.
+5: OK - migrations/002_evidence.sql lists exactly the six planned tables (source, source_version, source_block, block_subject, clinical_evidence, evidence_support), every non-blank line is a comment, and config/migration_suite.yaml still declares it pending.
+6: OK - _forbidden_field_locations recursively inspects mapping keys exactly; secretin.xml passes while api_key/password/secret/credential/presigned_url/bearer_token field names fail at any depth, and the production Manifest keeps extra=forbid.
+7: OK - regression tests cover manifest lineage (exact/wrong-source/wrong-version/wrong-record/wrong-filename), rule inventories and semantics, exact per-lane policies with drift detection, storage docs consistency, and the six-table placeholder; only the seven allowed paths changed, with no Evidence/Rule DDL, ingestion, S3/PostgreSQL clients, parsers, or Phase 3 work.
+Findings: The hardening is internally consistent: the manifest lineage validator, the canonical source_rule_policies map, the non-primary lane rejection, the recursive key-only forbidden-field check, and the six-table comment-only Evidence placeholder all align with their tests and the frozen contracts.
+Checks: Every changed file is on the allowed path list, no executable DDL or external clients were introduced, and the new tests assert both the positive invariants and the fail-closed drift cases the directive requires.
