@@ -3,9 +3,12 @@
 import re
 from pathlib import Path
 
+import pytest
 import yaml
 
 from scripts.migration_gate import contains_sql, plan
+
+pytestmark = pytest.mark.contract
 
 ROOT = Path(__file__).resolve().parents[2]
 SQL = (ROOT / "migrations/001_kmx.sql").read_text()
