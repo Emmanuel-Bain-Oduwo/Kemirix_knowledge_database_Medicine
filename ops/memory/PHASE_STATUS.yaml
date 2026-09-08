@@ -8,15 +8,15 @@ codex_login: pass # Operator-reported baseline; current smoke remains pending.
 agent_phase_0: complete # Swap task closed; lifecycle merged/deployed/verified/closed recorded.
 main_only_git_model: implemented
 temporary_task_branch_policy: implemented
-merge_gate: pass # MERGE_READY (all 13 checks) at 8753c1d; fail-closed behavior unchanged.
-ci: pass # foundation CI SUCCESS on PR heads and main pushes (94d6c59, bdfd2eb).
-ci_local_validation: pass # 261 tests plus Ruff/config/secret scan at checkpoint 8753c1d.
-github_hosted_ci: pass # foundation workflow SUCCESS on PRs #2/#3/#4 and main pushes.
-auto_merge: pass # Gated squash merges executed (owner-directed) after agent-gate SUCCESS; GitHub auto-merge feature itself not used.
+merge_gate: pass # MERGE_READY (all 13 checks) at 8753c1d and KMX-SCHEMA-001 head 61d8b74; fail-closed behavior unchanged.
+ci: pass # foundation CI SUCCESS on PR heads and main pushes (94d6c59, bdfd2eb, b36b909).
+ci_local_validation: pass # 273 tests plus Ruff/config/secret scan at KMX-SCHEMA-001 head 61d8b74.
+github_hosted_ci: pass # foundation workflow SUCCESS on PRs #2/#3/#4/#6 and main pushes (latest b36b909).
+auto_merge: pass # Gated squash merges executed (owner-directed automation) after agent-gate SUCCESS; GitHub auto-merge feature itself not used.
 auto_merge_configuration: owner_verification_pending # Execution proven; protection settings are separate.
 legacy_develop_branch_deletion: pending_owner_action
-deploy_dev_workflow: executed_successfully # Deploy development workflow_run deployed exact CI-tested SHAs 94d6c59 and bdfd2eb.
-development_deployment: pass # DEPLOYED_SHA=bdfd2eb on the OVH development environment; release + current symlink verified.
+deploy_dev_workflow: blocked_by_design # Refuses executable-migration releases until the separately approved development migration execution (DATABASE-001); b36b909 deploy refused, incomplete release quarantined.
+development_deployment: pass_for_744156d # Development runtime remains on the healthy 744156d release (DEPLOYED_SHA=744156d, verified); b36b909 deferred pending the development migration runner.
 provider_smoke_tests: pass # Real API smokes: minimax (Nebius MiniMax-M3), nemotron (Nebius Nemotron 3 Ultra), glm (Cloudflare GLM 5.3), kimi (Nebius Kimi K3, real analysis run); codex structural only.
 provider_structural_validation: implemented_locally_validated
 engineering_harnesses: implemented # Harness chain registry + KEMIRIX_ENGINEERING_HARNESS selection; Codex->OpenCode switch is a writer handoff.
@@ -25,15 +25,15 @@ agent_coordination: implemented
 memory_protocol: implemented
 research_gateway: implemented_disabled_backend
 worktree_tooling: implemented
-worktrees_initialized: pass # /srv/kemirix/worktrees/codex active; single-writer control VM.
+worktrees_initialized: pass # /srv/kemirix/worktrees/glm active writer; minimax/nemotron reviewer worktrees per task; single-writer control VM.
 five_agent_dry_run: pass # Real five-agent chain executed on FOUNDATION-CLOSEOUT-001 and FOUNDATION-QWEN-MINIMAX-SWAP-001 (codex writer, kimi analysis, minimax cross-check, GLM review, Nemotron QA).
 dbeaver_verification: pending
 phase_1_readiness: pass_owner_directed # Owner directed production database start after full pipeline proof.
-kmx_implementation: in_progress # KMX-SCHEMA-001 phase_1 task created; executable kmx schema DDL underway.
+kmx_implementation: merged # KMX-SCHEMA-001 merged at main b36b909 (PR #6); dev deployment deferred by the designed migration hook until DATABASE-001.
 evidence_implementation: not_started
 rules_implementation: not_started
-pr_creation: pass # Owner-confirmed automation rehearsal; repeated for PRs #3/#4.
-main_protection: pending_owner_configuration
-required_checks_configuration: pending_owner_configuration
+pr_creation: pass # Owner-confirmed automation rehearsal; repeated for PRs #3/#4/#6.
+main_protection: pass # protect-main ruleset ACTIVE since 2026-09-08 13:04: squash-only, PR required, linear history, no force pushes.
+required_checks_configuration: pass # Corrected 2026-09-08 from the joined-context typo to the two documented contexts: foundation + kemirix-agent-gate (D021).
 auto_delete_head_branches: pending_owner_configuration
-agent_gate_publication: pass # kemirix-agent-gate SUCCESS published on PR #3 (db709d7) and PR #4 (8753c1d).
+agent_gate_publication: pass # kemirix-agent-gate SUCCESS published on PR #3 (db709d7), PR #4 (8753c1d) and PR #6 (61d8b74).

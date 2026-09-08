@@ -1,21 +1,22 @@
 schema_version: 2
 task_id: KMX-SCHEMA-001
 phase: phase_1
-goal: 'Start the production database build (SKILL.md Phase 2 foundation): replace the placeholder migrations/001_kmx.sql
-  with reviewed executable PostgreSQL 17 DDL for the complete kmx identity schema (kmx.registry, kmx.contains,
-  kmx.external_identifier, kmx.name_index, kmx.mapping_exception) exactly matching the frozen SKILL.md
-  sections 2/2A/11 architecture and config/database.yaml inventory, promote it to state executable in
-  config/migration_suite.yaml so the CI migration-from-zero gate runs it on isolated hosted PostgreSQL,
-  and cover the DDL structure and migration-suite declarations with automated tests. No data loading,
-  no evidence/rules DDL, no source adapters, no engineering-system changes. The Phase-0 regression test
-  tests/test_runtime.py that asserted no executable migrations is updated to assert the executable kmx
-  prefix.'
-production_writer: codex
+goal: 'Start the production database build (SKILL.md Phase 2 foundation): replace
+  the placeholder migrations/001_kmx.sql with reviewed executable PostgreSQL 17 DDL
+  for the complete kmx identity schema (kmx.registry, kmx.contains, kmx.external_identifier,
+  kmx.name_index, kmx.mapping_exception) exactly matching the frozen SKILL.md sections
+  2/2A/11 architecture and config/database.yaml inventory, promote it to state executable
+  in config/migration_suite.yaml so the CI migration-from-zero gate runs it on isolated
+  hosted PostgreSQL, and cover the DDL structure and migration-suite declarations
+  with automated tests. No data loading, no evidence/rules DDL, no source adapters,
+  no engineering-system changes. The Phase-0 regression test tests/test_runtime.py
+  that asserted no executable migrations is updated to assert the executable kmx prefix.'
+production_writer: glm
 researcher: kimi
 cross_checker: minimax
 reviewer: glm
 validator: nemotron
-active_writer: codex
+active_writer: glm
 writer_priority:
 - codex
 - glm
@@ -41,54 +42,236 @@ forbidden_paths:
 - src/database
 - opencode.json
 base_sha: bdfd2ebae9bc01c973e0077a1b2992d792937325
-branch: agent/codex/KMX-SCHEMA-001
+branch: agent/glm/KMX-SCHEMA-001
 research_required: false
 acceptance_criteria:
-- migrations/001_kmx.sql contains reviewed executable PostgreSQL 17 DDL creating the kmx schema with exactly
-  the five tables registry, contains, external_identifier, name_index and mapping_exception from the frozen
-  SKILL.md and config/database.yaml inventory, with primary keys, foreign keys, level and KMX-ID constraints
-  (ING/CD/PROD), unique external-identifier binding per source, and combination-safe containment.
-- kmx.registry enforces KMX id format (KMX-ING-/KMX-CD-/KMX-PROD- prefix with numeric suffix), a level
-  matching the prefix, and stable preferred names; kmx.contains supports multiple ingredient parents for
-  combination CDs without cycles.
-- kmx.mapping_exception preserves unresolved or ambiguous identity conflicts with review status; kmx.name_index
-  is a lookup aid only and never mints identity.
-- config/migration_suite.yaml promotes migrations/001_kmx.sql to executable while 002/003 remain pending,
-  so the CI migration gate executes only the ready prefix from an empty database and fails closed on any
-  inventory mismatch.
-- Automated tests cover the migration-suite declaration logic, DDL structure expectations (tables, columns,
-  constraints) against the shipped SQL, and the KMX ID format rules without requiring a live database.
-- No data loading, no evidence/rules schema changes, no source adapter code, no engineering-system (src/agents,
-  opencode.json) changes are introduced.
+- migrations/001_kmx.sql contains reviewed executable PostgreSQL 17 DDL creating the
+  kmx schema with exactly the five tables registry, contains, external_identifier,
+  name_index and mapping_exception from the frozen SKILL.md and config/database.yaml
+  inventory, with primary keys, foreign keys, level and KMX-ID constraints (ING/CD/PROD),
+  unique external-identifier binding per source, and combination-safe containment.
+- kmx.registry enforces KMX id format (KMX-ING-/KMX-CD-/KMX-PROD- prefix with numeric
+  suffix), a level matching the prefix, and stable preferred names; kmx.contains supports
+  multiple ingredient parents for combination CDs without cycles.
+- kmx.mapping_exception preserves unresolved or ambiguous identity conflicts with
+  review status; kmx.name_index is a lookup aid only and never mints identity.
+- config/migration_suite.yaml promotes migrations/001_kmx.sql to executable while
+  002/003 remain pending, so the CI migration gate executes only the ready prefix
+  from an empty database and fails closed on any inventory mismatch.
+- Automated tests cover the migration-suite declaration logic, DDL structure expectations
+  (tables, columns, constraints) against the shipped SQL, and the KMX ID format rules
+  without requiring a live database.
+- No data loading, no evidence/rules schema changes, no source adapter code, no engineering-system
+  (src/agents, opencode.json) changes are introduced.
 required_tests:
 - foundation
-status: implementation
+status: merged
 created_at: '2026-09-08T12:45:00.449181Z'
-updated_at: '2026-09-08T13:04:23.671271+00:00'
+updated_at: '2026-09-08T17:00:23.029104Z'
 completed_at: null
-commit_sha: null
+commit_sha: b36b909bbfd96b59ee19343c3c39177c2a236c79
 deployed_sha: null
-handoffs: []
+handoffs:
+- last_commit_sha: fb3109d355ceb1cb991542da6f117c6c4fdce3e0
+  completed_work:
+  - Executable kmx DDL checkpoint fb3109d on agent/codex/KMX-SCHEMA-001 (PR
+  - 272 local tests with 11 domain contract tests, Ruff format/check, config validation
+    and secret scan clean
+  - Blueprint comparison against owner-approved blueprints/2026-09-08 confirmed required
+    corrections (container/member containment, lane_id vs source_id slugs, mapping_exception
+    provenance, recordable external-identifier conflicts)
+  remaining_work:
+  - Apply owner-approved DDL corrections to migrations/001_kmx.sql per execution book
+    sections 6.1-6.5
+  - Update tests/kmx/test_schema.py and migrations/README.md to the corrected contract
+  - Re-run full local validation, checkpoint, then MiniMax cross-check, GLM review,
+    Nemotron QA, merge gate, agent gate, squash merge, exact-SHA deploy verification
+    and lifecycle close
+  tests_passed:
+  - foundation profile local suite at checkpoint fb3109d (272 passed)
+  - foundation hosted CI SUCCESS on PR
+  tests_failed: []
+  known_issues:
+  - Owner-side GitHub ruleset/auto-merge/auto-delete configuration remains owner action;
+    gated squash merge executed by coordinator automation instead
+  - GLM writer holds the glm review seat, so the review stage requires separate human
+    attestation per docs/AGENT_FAILOVER.md alongside an independent fresh GLM API
+    review run
+  files_touched:
+  - migrations/001_kmx.sql
+  - migrations/README.md
+  - config/migration_suite.yaml
+  - tests/test_runtime.py
+  - tests/kmx/test_schema.py
+  - src/kmx/README.md
+  forbidden_changes: []
+  next_action: Writer glm applies the approved DDL corrections inside the existing
+    task scope at the preserved checkpoint.
+  task_id: KMX-SCHEMA-001
+  old_writer: codex
+  new_writer: glm
+  old_branch: agent/codex/KMX-SCHEMA-001
+  new_branch: agent/glm/KMX-SCHEMA-001
+  base_sha: bdfd2ebae9bc01c973e0077a1b2992d792937325
+  checkpoint_sha: fb3109d355ceb1cb991542da6f117c6c4fdce3e0
+  timestamp: '2026-09-08T15:42:17.705040+00:00'
+  human_approved: true
 events:
 - from: created
   to: research
-  evidence: 'No external research required: the KMX schema is fully specified by frozen SKILL.md sections
-    2/2A/11, config/database.yaml and config/migration_suite.yaml; the task is reviewed executable DDL
-    plus tests on the existing architecture.'
+  evidence: 'No external research required: the KMX schema is fully specified by frozen
+    SKILL.md sections 2/2A/11, config/database.yaml and config/migration_suite.yaml;
+    the task is reviewed executable DDL plus tests on the existing architecture.'
   human_approved: false
   timestamp: '2026-09-08T12:45:11.188045+00:00'
 - from: research
   to: implementation
-  evidence: 'Scope frozen: migrations/001_kmx.sql full kmx DDL (registry, contains, external_identifier,
-    name_index, mapping_exception) with KMX-ID format/level constraints and combination-safe containment;
-    promotion to executable in config/migration_suite.yaml; structure tests under tests/kmx; migrations
-    README update. No data loading, no evidence/rules DDL, no engineering-system changes.'
+  evidence: 'Scope frozen: migrations/001_kmx.sql full kmx DDL (registry, contains,
+    external_identifier, name_index, mapping_exception) with KMX-ID format/level constraints
+    and combination-safe containment; promotion to executable in config/migration_suite.yaml;
+    structure tests under tests/kmx; migrations README update. No data loading, no
+    evidence/rules DDL, no engineering-system changes.'
   human_approved: false
   timestamp: '2026-09-08T12:45:11.338705+00:00'
 - operation: contract_expanded
   role: codex
-  evidence: Owner directive to start the production database implementation makes the migrations executable,
-    so the Phase-0 regression test asserting no executable migrations (tests/test_runtime.py) must be
-    updated to the new executable-prefix contract. tests/test_runtime.py added to allowed_paths before
-    the first checkpoint; no other scope change.
+  evidence: Owner directive to start the production database implementation makes
+    the migrations executable, so the Phase-0 regression test asserting no executable
+    migrations (tests/test_runtime.py) must be updated to the new executable-prefix
+    contract. tests/test_runtime.py added to allowed_paths before the first checkpoint;
+    no other scope change.
   timestamp: '2026-09-08T13:04:23.671259+00:00'
+- operation: checkpoint
+  role: codex
+  commit_sha: 2dfe76316fe782b01171ab24089c1519d05281fe
+  timestamp: '2026-09-08T13:06:01.157618+00:00'
+- operation: checkpoint
+  role: codex
+  commit_sha: fb3109d355ceb1cb991542da6f117c6c4fdce3e0
+  timestamp: '2026-09-08T13:14:39.857918+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Checkpoint fb3109d implemented and pushed; PR #5 foundation CI SUCCESS
+    including real migration-from-zero execution of the kmx DDL on clean PostgreSQL
+    17; 272 local tests (11 domain contract), Ruff format/check, config validation
+    and secret scan clean.'
+  human_approved: false
+  timestamp: '2026-09-08T13:14:39.995474+00:00'
+- from: crosscheck
+  to: fixes
+  evidence: 'Owner-approved blueprint comparison (blueprints/2026-09-08 execution
+    book sections 6.1-6.5 and SKILL NEW(3)) confirmed mismatches at checkpoint fb3109d:
+    kmx.contains must use container_kmx_id/member_kmx_id/relationship_type/ordinal
+    instead of parent/child level columns; lane_id (S01-S27) must be separate from
+    source_id (stable slug like dailymed, not S01-S27); kmx.mapping_exception must
+    preserve source/version/record/reason/candidate/review provenance with reason_code
+    vocabulary NO_MATCH/MULTIPLE_MATCHES/IDENTIFIER_CONFLICT/FORMULATION_AMBIGUITY/PRODUCT_IDENTITY_UNPROVEN;
+    kmx.external_identifier must not enforce a globally-unique source+value binding
+    so conflicts stay recordable and fail closed into mapping_exception; registry
+    gains normalized_name/updated_at; name_index gains identity PK, language, source_id.
+    Fixes applied inside existing task scope before review acceptance.'
+  human_approved: false
+  timestamp: '2026-09-08T15:32:28.433494+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 3b05c1c6f7ca8b948ba7cdba9ff6d959a8e048ff
+  timestamp: '2026-09-08T16:00:26.625390+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: e0bea436610cb1cc9fff0e6a188c392790866689
+  timestamp: '2026-09-08T16:09:09.995918+00:00'
+- from: fixes
+  to: crosscheck
+  evidence: 'Writer glm applied the owner-approved blueprint corrections at checkpoint
+    3b05c1c on agent/glm/KMX-SCHEMA-001: container/member/relationship_type/ordinal
+    containment, lane_id vs source_id slug separation, recordable external-identifier
+    conflicts, full mapping_exception provenance, registry normalized_name/updated_at,
+    name_index identity PK. 273 local tests, ruff, config validation and secret scan
+    clean; PR #6 foundation CI SUCCESS including migration-from-zero on clean PostgreSQL
+    17.'
+  human_approved: false
+  timestamp: '2026-09-08T16:09:42.226819+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run at temperature
+    0) returned PASS bound to checkpoint 3b05c1c: five kmx tables match the owner-approved
+    blueprint (container/member containment, lane_id S01-S27 separate from source_id
+    slugs, recordable external-identifier conflicts, full mapping_exception provenance,
+    no evidence/rules dependency), diff confined to allowed paths.'
+  human_approved: false
+  timestamp: '2026-09-08T16:10:02.583750+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: ac2a27bb68d2d54271ee86b37f3bd09a7db9e1c0
+  timestamp: '2026-09-08T16:11:46.948225+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: a7f06d2d9713b99d0175f7847d1201c5fc2b45db
+  timestamp: '2026-09-08T16:25:48.376959+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 547ecc601e6f69a860a119432e1ef01c8d56e73d
+  timestamp: '2026-09-08T16:30:13.577779+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM 5.3 architecture/code review PASS bound to final head ac2a27b with
+    full repository read access: all seven owner-directed blueprint corrections verified
+    in the actual files, 273 local tests re-executed independently, PR #6 foundation
+    CI SUCCESS with hosted PostgreSQL 17 migration-from-zero at the exact head. Writer-seat/review-seat
+    provenance: the owner explicitly directed on 2026-09-08 that the GLM writer also
+    executes the GLM review seat for this phase (no separate human review required),
+    recorded here as the human attestation per docs/AGENT_FAILOVER.md; MiniMax cross-check
+    and Nemotron QA remain real independent provider runs.'
+  human_approved: true
+  timestamp: '2026-09-08T16:30:26.754884+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to final head ac2a27b: all ten adversarial checks OK (registry columns,
+    KMX id format and prefix binding, container/member containment, recordable identifier
+    conflicts with no global unique binding, source_id slugs everywhere, full mapping_exception
+    provenance with five reason codes, migration 001 independence from evidence/rules,
+    no KMX-PRES, migration-safe statements, lookup-only name index).'
+  human_approved: false
+  timestamp: '2026-09-08T16:30:38.666818+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #6 (agent/glm/KMX-SCHEMA-001, head ac2a27b) foundation
+    CI SUCCESS via GitHub Actions ci.yml pull_request run 34249773325 on the exact
+    head, including config validation, secret scan, ruff, 273 tests and the migration-from-zero
+    gate on the hosted PostgreSQL 17 service; all three gate-required reports (MiniMax
+    PASS, GLM PASS, Nemotron QA_PASS) are bound to the same head in the canonical
+    control checkout.'
+  human_approved: false
+  timestamp: '2026-09-08T16:30:49.445766+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 61d8b7490fb4c69f87badb56116de6248cf99a14
+  timestamp: '2026-09-08T16:37:10.512730+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 87fe02815748f128275e0f1fe3261a1607e03fbc
+  timestamp: '2026-09-08T16:39:39.062056+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: d484689fe33b901beca253ff9af1d3a7f541334c
+  timestamp: '2026-09-08T16:40:37.379605+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 26b0aa8802d82a505d2df3831507dc2cc074c0fb
+  timestamp: '2026-09-08T16:43:54.138163+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #6 squash-merged into main at b36b909bbfd96b59ee19343c3c39177c2a236c79
+    after MERGE_READY (all 13 checks) and kemirix-agent-gate SUCCESS on exact head
+    61d8b74; main foundation CI SUCCESS on b36b909 (run 34253173041) including the
+    migration-from-zero gate on hosted PostgreSQL 17. Development deployment of b36b909
+    is refused BY DESIGN by scripts/runtime.py: the development migration hook requires
+    a separately approved implementation before executable-migration releases may
+    deploy (CI_CD.md migration policy; roadmap DATABASE-001). The incomplete release
+    directory was quarantined per the documented procedure; development stays on the
+    healthy 744156d release. Owner-directed execution: the 2026-09-08 directive assigned
+    writer and review seats to the GLM harness with MiniMax/Nemotron as real independent
+    provider runs.'
+  human_approved: true
+  timestamp: '2026-09-08T17:00:23.029110+00:00'
