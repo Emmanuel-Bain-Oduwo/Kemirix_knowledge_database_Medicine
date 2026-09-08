@@ -2,7 +2,7 @@ object_storage:
   provider: ovh_s3_compatible
   bucket: kemirix-knowledge-raw
   purpose: raw_source_vault
-  layout: "<source_id>/<release_or_snapshot>/[<record_id>/]original/"
+  layout: "<source_id>/<source_version>/<source_record_key>/original/"
   manifest: manifest.json
   store:
     - api_responses

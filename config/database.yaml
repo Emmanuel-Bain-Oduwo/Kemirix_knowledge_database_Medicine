@@ -11,7 +11,9 @@ database:
       - mapping_exception
     evidence:
       - source
+      - source_version
       - source_block
+      - block_subject
       - clinical_evidence
       - evidence_support
     rules:
