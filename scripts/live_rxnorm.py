@@ -88,12 +88,15 @@ def main():
             f"(.venv/bin/python scripts/live_rxnorm.py): {type(error).__name__}"
         ) from None
 
+    # Credential checks FIRST: fail closed before touching any external
+    # system (the vault and UTS credentials are validated before the
+    # database connection is even opened).
+    store = S3RawObjectStore.from_environment(Path.cwd())
+    require_uts_api_key()
     pg_env = dev_database_env()
     connection = connect_from_pg_env(pg_env)
     try:
         healthcheck(connection)
-        store = S3RawObjectStore.from_environment(Path.cwd())
-        require_uts_api_key()
         client = make_client()
         repository = KmxRepository(connection)
         builder = KmxBuilder(repository, connection)
