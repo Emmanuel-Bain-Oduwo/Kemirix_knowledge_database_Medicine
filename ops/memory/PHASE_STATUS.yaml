@@ -8,15 +8,15 @@ codex_login: pass # Operator-reported baseline; current smoke remains pending.
 agent_phase_0: complete # Swap task closed; lifecycle merged/deployed/verified/closed recorded.
 main_only_git_model: implemented
 temporary_task_branch_policy: implemented
-merge_gate: pass # MERGE_READY (all 13 checks) on every Phase 1/2 task head; fail-closed behavior unchanged.
-ci: pass # foundation CI SUCCESS on PR heads and main pushes through c255ea0.
-ci_local_validation: pass # 322 tests plus Ruff/config/secret scan at CORE-001 head 6e9ee61.
-github_hosted_ci: pass # foundation workflow SUCCESS on PRs #2 through #11 and main pushes (latest c255ea0).
+merge_gate: pass # MERGE_READY (all 13 checks) on every Phase 1/2 and hardening task head; fail-closed behavior unchanged.
+ci: pass # foundation CI SUCCESS on PR heads and main pushes through 6876f04.
+ci_local_validation: pass # 337 tests plus Ruff/config/secret scan at PHASE1-2-CONTRACT-HARDENING-001 head 85b0ecb.
+github_hosted_ci: pass # foundation workflow SUCCESS on PRs #2 through #13 and main pushes (latest 6876f04).
 auto_merge: pass # Gated squash merges executed (owner-directed automation) after agent-gate SUCCESS; GitHub auto-merge feature itself not used.
 auto_merge_configuration: owner_verification_pending # Execution proven; protection settings are separate.
 legacy_develop_branch_deletion: pending_owner_action
 deploy_dev_workflow: pass # Development migration execution implemented (FOUNDATION-CD-AND-SKILL-001); exact-SHA deployments succeeding including executable migrations.
-development_deployment: pass # DEPLOYED_SHA=c255ea0 (CORE-001 merge) with kmx schema applied; verify-runtime PASS.
+development_deployment: pass # DEPLOYED_SHA=6876f04 (PHASE1-2-CONTRACT-HARDENING-001 merge) with kmx schema applied; verify-runtime PASS.
 provider_smoke_tests: pass # Real API smokes: minimax (Nebius MiniMax-M3), nemotron (Nebius Nemotron 3 Ultra), glm (Cloudflare GLM 5.3), kimi (Nebius Kimi K3, real analysis run); codex structural only.
 provider_structural_validation: implemented_locally_validated
 engineering_harnesses: implemented # Harness chain registry + KEMIRIX_ENGINEERING_HARNESS selection; Codex->OpenCode switch is a writer handoff.
@@ -30,10 +30,11 @@ five_agent_dry_run: pass # Real five-agent chain executed on FOUNDATION-CLOSEOUT
 dbeaver_verification: pending
 phase_1_readiness: pass_owner_directed # Owner directed production database start after full pipeline proof.
 kmx_implementation: complete # KMX-SCHEMA-001 merged at b36b909; kmx schema applied from-zero to dev PostgreSQL 17; deployed+verified+closed.
-evidence_implementation: contract_frozen # DOMAIN-CONTRACT-001 froze the 6-table evidence contract (DDL lands with EVIDENCE-001 per roadmap).
-rules_implementation: contract_frozen # DOMAIN-CONTRACT-001 froze the 3-table rule contract (DDL lands with RULES-001 per roadmap).
-pr_creation: pass # Owner-confirmed automation rehearsal; repeated for PRs #3 through #11.
+evidence_implementation: contract_frozen # DOMAIN-CONTRACT-001 froze the 6-table evidence contract; PHASE1-2-CONTRACT-HARDENING-001 aligned the 002 placeholder to all six tables (non-executable until EVIDENCE-001 per roadmap).
+rules_implementation: contract_frozen # DOMAIN-CONTRACT-001 froze the 3-table rule contract; PHASE1-2-CONTRACT-HARDENING-001 froze the full structural field inventories (clinical_rule/rule_evidence/rule_test) and exact S01-S27 rule policies (DDL lands with RULES-001 per roadmap).
+pr_creation: pass # Owner-confirmed automation rehearsal; repeated for PRs #3 through #13.
 main_protection: pass # protect-main ruleset ACTIVE since 2026-09-08 13:04: squash-only, PR required, linear history, no force pushes.
 required_checks_configuration: pass # foundation + kemirix-agent-gate both required and enforced (D021 correction verified by gated merges).
 auto_delete_head_branches: pending_owner_configuration
-agent_gate_publication: pass # kemirix-agent-gate SUCCESS published on PRs #3, #4, #6, #8, #9, #10 and #11.
+agent_gate_publication: pass # kemirix-agent-gate SUCCESS published on PRs #3, #4, #6, #8, #9, #10, #11 and #13.
+phase_1_2_contract_hardening: complete # PHASE1-2-CONTRACT-HARDENING-001 merged at 6876f04 (PR #13); six still-valid PR #10 findings closed; deployed, verified, lifecycle closed.
