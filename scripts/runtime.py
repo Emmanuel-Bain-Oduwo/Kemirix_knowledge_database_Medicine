@@ -174,55 +174,16 @@ def dev_database_env(path=None):
     return env
 
 
-def psql(pg_env, *args, timeout=60):
-    """Run psql with a minimal environment; never echo credentials or bodies."""
-    result = subprocess.run(
-        ["psql", "-XAt", "--set=ON_ERROR_STOP=1", *args],
-        capture_output=True,
-        env={"PATH": "/usr/local/bin:/usr/bin:/bin", "LC_ALL": "C", **pg_env},
-        timeout=timeout,
-        check=False,
-    )
-    if result.returncode:
-        raise RuntimeError("development database operation failed; details suppressed")
-    return result.stdout.decode().strip()
-
-
-def ready_prefix(release):
-    """Ready migration files from the release's own reviewed migration gate."""
-    output = command(
-        [
-            str(release / ".venv/bin/python"),
-            "-c",
-            "import json,sys;from pathlib import Path;"
-            "sys.path.insert(0,'.');"
-            "from scripts.migration_gate import plan;"
-            "json.dump(plan(Path.cwd()),sys.stdout)",
-        ],
-        cwd=release,
-        timeout=60,
-    )
-    ready, _pending = json.loads(output)
-    return list(ready)
-
-
-def expected_tables(release, ready):
-    """schema-qualified tables the ready migration files create."""
-    tables = []
-    for relative in ready:
-        text = (release / relative).read_text()
-        tables += re.findall(r"CREATE TABLE\s+([a-z_]+\.[a-z_]+)\s*\(", text, re.IGNORECASE)
-    return tables
-
-
 def execute_development_migrations(release):
     """Apply or verify the executable migration prefix on the development database.
 
-    This is the separately approved development migration execution: credentials
-    come only from the operator-provisioned env file, the server must be
-    PostgreSQL 17, the prefix applies from zero in one transaction, an already
-    applied prefix verifies idempotently, and every other state fails closed.
-    Multi-migration upgrades require the DATABASE-001 migration runner.
+    The reviewed runner (src/database/migrations.py, packaged inside the
+    release) owns every SQL decision: PostgreSQL 17 check, clean-database
+    from-zero apply in one transaction, idempotent prefix verification,
+    prefix-based multi-migration upgrades and fail-closed state validation.
+    Credentials come only from the operator-provisioned env file and reach
+    the runner only through the PG* environment; the password never appears
+    on a command line, in a log or in an error.
     """
     pg_env = dev_database_env()
     if pg_env is None:
@@ -230,46 +191,21 @@ def execute_development_migrations(release):
             "development migration hook requires operator-provisioned credentials "
             f"at {DEV_DB_ENV_FILE} (0600, owner-only)"
         )
-    version = int(psql(pg_env, "-c", "SHOW server_version_num"))
-    if not 170000 <= version < 180000:
-        raise RuntimeError("development database must be PostgreSQL 17")
-    non_system = psql(
-        pg_env,
-        "-c",
-        "SELECT count(*) FROM information_schema.tables "
-        "WHERE table_schema NOT IN ('pg_catalog','information_schema')",
+    runner = release / ".venv/bin/python"
+    if not runner.is_file():
+        raise RuntimeError("release virtual environment missing; deploy incomplete")
+    result = subprocess.run(
+        [str(runner), "-m", "database.migrations", str(release)],
+        capture_output=True,
+        env={"PATH": "/usr/local/bin:/usr/bin:/bin", "LC_ALL": "C", **pg_env},
+        timeout=300,
+        check=False,
     )
-    domain_schemas = psql(
-        pg_env,
-        "-c",
-        "SELECT count(*) FROM information_schema.schemata "
-        "WHERE schema_name IN ('kmx','evidence','rules')",
-    )
-    ready = ready_prefix(release)
-    if domain_schemas != "0":
-        if len(ready) > 1:
-            raise RuntimeError(
-                "multi-migration development upgrade requires the DATABASE-001 migration runner"
-            )
-        present = set(
-            psql(
-                pg_env,
-                "-c",
-                "SELECT table_schema||'.'||table_name FROM information_schema.tables "
-                "WHERE table_schema IN ('kmx','evidence','rules')",
-            ).split()
-        )
-        if present != set(expected_tables(release, ready)):
-            raise RuntimeError("development migration state does not match the executable prefix")
-        return
-    if non_system != "0":
-        raise RuntimeError("development database is not empty; refusing from-zero migration")
-    psql(
-        pg_env,
-        "--single-transaction",
-        *[f"--file={release / relative}" for relative in ready],
-        timeout=120,
-    )
+    if result.returncode:
+        raise RuntimeError("development migration runner failed; details suppressed")
+    status = result.stdout.decode().strip()
+    if status:
+        print(status)
 
 
 def verify(repo, root, sha, health=True):
