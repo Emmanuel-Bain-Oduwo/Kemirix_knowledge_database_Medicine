@@ -2,6 +2,8 @@
 conservative normalizer, the psycopg-backed repository and the deterministic
 resolver."""
 
+from .allocation import allocate_kmx_id
+from .builders import Built, KmxBuilder, PreciseParent
 from .exceptions import (
     ConfigurationError,
     IdentityResolutionError,
@@ -21,7 +23,10 @@ from .resolver import (
 
 __all__ = [
     "APPROVED_PRODUCT_CREATORS",
+    "Built",
     "KMX_ID_PATTERN",
+    "KmxBuilder",
+    "PreciseParent",
     "ConfigurationError",
     "ExternalBinding",
     "IdentityResolutionError",
@@ -34,6 +39,7 @@ __all__ = [
     "NameCandidate",
     "ResolutionRequest",
     "Resolved",
+    "allocate_kmx_id",
     "is_valid_kmx_id",
     "normalize_name",
     "resolve_identity",
