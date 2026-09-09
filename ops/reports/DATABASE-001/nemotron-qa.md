@@ -1,4 +1,8 @@
 QA_PASS
+Task-ID: DATABASE-001
+Head-SHA: 222491783cc8dcf9491646598b6602d708d66c8a
+Role: nemotron
+
 1: OK - credentials only in parameters/URL/PG* env; errors/messages never contain secrets; allow_insecure is CI-only escape; secure sslmodes default; dev credential file referenced not logged
 2: OK - from-zero and prefix upgrade paths each run in exactly one BEGIN/COMMIT with ROLLBACK on failure; verification paths execute zero DDL; no half-applied state on success
 3: OK - state derived from table inventory only (no history table); foreign tables, non-empty non-domain DBs, unsupported PG versions, non-prefix states fail closed before DDL; idempotent prefix verification; strict prefix upgrades missing files then verifies; pending placeholders never executed
