@@ -1,0 +1,220 @@
+schema_version: 2
+task_id: IDENTITY-SOURCES-001
+phase: phase_10
+goal: 'Implement production-ready acquisition/parser/resolution code with fixtures
+  for the S02-S05 identity-enrichment lanes (owner directive 2026-09-09, Phase 10
+  / IDENTITY-SOURCES-001). NO live downloads for any of these lanes in this program;
+  only the pinned RxNorm load (already authorized) runs live after this phase. S02
+  athena_extension: operator- provided OMOP Athena ZIP validation/preservation (required
+  CONCEPT, CONCEPT_RELATIONSHIP, CONCEPT_SYNONYM, DRUG_STRENGTH, VOCABULARY members),
+  streaming CSV concept parsing with exact vocabulary/version/license recording, and
+  mapping of verified OMOP/RxNorm Extension identifiers into EXISTING KMX only (RxCUI
+  concept codes resolve to existing identities and attach OMOP external identifiers;
+  no parallel universe is minted). S03 gsrs_unii: bulk zipped JSON snapshot substance
+  parsing (UNII, preferred name, substance class, parent relationships), exact UNII-to-
+  KMX-ING resolution (minting only where the lane contract authorizes the ingredient
+  level), base/salt parent relationships preserved through precise-ingredient containment
+  and never merged by name, plus the openFDA substance canary verification client
+  (api.fda.gov, conservative 3 rps, honor 429, official limits respected). S04 chebi_unichem:
+  ChEBI FULL JSON compound parsing (identifiers, synonyms, curated cross-references,
+  InChI/InChIKey, ontology parents), exact curated/structure bridge to KMX-ING with
+  stereochemistry/isotope/salt distinctions preserved, and the UniChem REST client
+  (compounds/connectivity/sources endpoints, conservative 2 rps default with no invented
+  ceilings, honor 429) where connectivity similarity never silently becomes exact
+  identity. S05 medrt: dynamic paired-release discovery from the official archive
+  index (newest Core_MEDRT_<release>_XML.zip plus matching Accessory, no hardcoded
+  stale dates), MED-RT XML association parsing, and attachment to existing KMX only
+  through exact RxNorm crosswalks with no prescribing authority.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- src/sources
+- tests
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/storage
+- src/database
+- src/agents
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs
+- config
+- pyproject.toml
+- uv.lock
+base_sha: 8543ed7367116afd04de977086d960504ea0bea0
+branch: agent/glm/IDENTITY-SOURCES-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- 'S02: the OMOP Athena module validates operator-provided ZIPs (all five required
+  CSV members present, readable), streams concept rows with exact vocabulary/version/license
+  recording, resolves RxNorm-vocabulary concept codes (RXCUI) to existing KMX and
+  attaches OMOP_CONCEPT_ID external identifiers; it never mints identities and records
+  per-row outcomes.'
+- 'S03: the GSRS/UNII module parses the bulk zipped JSON substance snapshot (UNII,
+  preferred name, substance class, parents), resolves exact UNII to KMX-ING (minting
+  only under the lane authorization), preserves base/salt parent relationships through
+  precise-ingredient containment without name-based merging, and provides the openFDA
+  canary client with a conservative 3 rps rate, 429/Retry-After honoring and the official
+  limit documentation; no live calls in tests.'
+- "S04: the ChEBI/UniChem module parses ChEBI FULL JSON compounds (identifier, name,\
+  \ InChIKey, synonyms, curated cross-references, ontology parents), bridges to KMX-ING\
+  \ through exact curated cross-references only (stereochemistry, isotope and salt\
+  \ distinctions preserved \u2014 connectivity similarity is never identity), and\
+  \ provides the UniChem REST client with the conservative 2 rps internal default\
+  \ and 429 honoring; no live calls in tests."
+- 'S05: the MED-RT module discovers paired releases dynamically from the official
+  archive index (newest Core_MEDRT_*_XML.zip plus matching Accessory; no hardcoded
+  release dates), parses concept associations from the core XML, and attaches supporting
+  metadata to existing KMX only through exact RxNorm crosswalks with no prescribing
+  authority.'
+- "Tests cover every lane with realistic offline fixtures: OMOP CSV archive (enrichment\
+  \ into existing KMX, missing-member rejection), GSRS JSON snapshot (UNII resolution,\
+  \ salt/base preservation, no name merging), ChEBI JSON (curated bridge, stereochemistry\
+  \ preservation, connectivity non-identity), MED-RT (paired-release discovery from\
+  \ a fixture index, association parsing, crosswalk attachment), and all three API\
+  \ clients (URL construction, rate defaults, secret-free errors) \u2014 all offline."
+- Only allowed paths change; no Evidence or Rule implementation, no live bulk downloads
+  for S02-S05, no changes to the frozen kmx/storage/database contracts beyond calling
+  them.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-09T05:14:38.321941Z'
+updated_at: '2026-09-09T05:41:14.462459Z'
+completed_at: '2026-09-09T05:41:14.462464Z'
+commit_sha: cc29a09937de8b4305529adc84e0e48a00a61878
+deployed_sha: cc29a09937de8b4305529adc84e0e48a00a61878
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'Official behavior researched: OMOP Athena export shape (CONCEPT/CONCEPT_RELATIONSHIP/CONCEPT_SYNONYM/DRUG_STRENGTH/VOCABULARY
+    CSVs), openFDA substance API and official limits (240/min, 1000/day no key; 240/min,
+    120k/day with key), ChEBI FULL JSON download form, UniChem v1 API endpoints (POST
+    compounds/connectivity, GET sources), and the MED-RT archive layout (paired Core_MEDRT_*_XML.zip
+    plus Accessory) are all documented in the owner directive from official sources;
+    fixtures encode the documented shapes.'
+  human_approved: false
+  timestamp: '2026-09-09T05:14:38.475884+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: four lane modules (OMOP enrichment into existing KMX, GSRS
+    UNII resolution with salt/base preservation plus openFDA canary client, ChEBI
+    curated bridge plus UniChem client with connectivity non-identity, MED-RT paired-release
+    discovery plus association parsing with crosswalk attachment); all offline fixture
+    tests; no live downloads.'
+  human_approved: false
+  timestamp: '2026-09-09T05:14:38.628232+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint complete: four lane modules with fixture-tested
+    production code, no live downloads, builder reuse-path identifier enrichment;
+    446 tests, ruff, config validation and secret scan clean.'
+  human_approved: false
+  timestamp: '2026-09-09T05:24:45.383238+00:00'
+- from: crosscheck
+  to: fixes
+  evidence: Checkpoint submission correctly refused a src/kmx change outside this
+    task allowed paths (the ownership gate doing its job); the identifier-enrichment
+    on reuse moved caller-side into the ChEBI bridge exactly like the OMOP module,
+    src/kmx reverted untouched.
+  human_approved: false
+  timestamp: '2026-09-09T05:26:03.015578+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 2933125c29f62ccd69baf1778bc1284a310111da
+  timestamp: '2026-09-09T05:26:07.911667+00:00'
+- from: fixes
+  to: crosscheck
+  evidence: 'Implementation checkpoint complete after the fixes transition: four lane
+    modules with fixture-tested production code, no live downloads; 446 tests, ruff,
+    config validation and secret scan clean.'
+  human_approved: false
+  timestamp: '2026-09-09T05:26:09.423288+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 101c47f862f0ef19b7f0c4889eb1a5727e4bc5e5
+  timestamp: '2026-09-09T05:28:18.202592+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 2933125: all five lane checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T05:28:19.584273+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 2933125: four disciplined lane modules,
+    exact cross-reference enrichment only, distinctions preserved, client surfaces
+    without live calls, ownership gate correctly honored; 446 tests and all local
+    gates re-executed clean. Seat provenance per D020; MiniMax was a real independent
+    Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-09T05:29:12.108422+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: a93caf0a1b6cd6d4d72f0a507d61c60c09012672
+  timestamp: '2026-09-09T05:30:39.393130+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 2933125: all five adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T05:30:40.994336+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 36aeabf6314e648e1eb35177fd679096f24e623f
+  timestamp: '2026-09-09T05:33:49.223780+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #21 foundation CI SUCCESS on head 2933125 (run
+    34315203879); kemirix-agent-gate SUCCESS published on the same head; all three
+    gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-09T05:41:13.818892+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #21 squash-merged into main at cc29a09 after MERGE_READY and kemirix-agent-gate
+    SUCCESS on exact head 2933125; main CI SUCCESS (run 34315657769).'
+  human_approved: true
+  timestamp: '2026-09-09T05:41:13.979805+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34315703765) deployed the exact
+    merged SHA: DEPLOYED_SHA=cc29a09937de8b4305529adc84e0e48a00a61878.'
+  human_approved: true
+  timestamp: '2026-09-09T05:41:14.140811+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh cc29a09: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T05:41:14.301615+00:00'
+- from: verified
+  to: closed
+  evidence: 'IDENTITY-SOURCES-001 complete (Phase 10): S02 OMOP enrichment into existing
+    KMX, S03 GSRS UNII resolution with salt/base preservation plus openFDA canary
+    client, S04 ChEBI curated bridge plus UniChem client with connectivity non-identity,
+    S05 MED-RT paired-release discovery with exact crosswalk attachment; all fixture-tested
+    offline, no live S02-S05 downloads; 446 tests; full review chain (real Nebius
+    MiniMax PASS, GLM PASS, real Nebirus Nemotron QA_PASS on checkpoint 2933125),
+    merge gate MERGE_READY, agent-gate SUCCESS, squash merge at cc29a09, main CI SUCCESS,
+    exact-SHA deployment verified.'
+  human_approved: true
+  timestamp: '2026-09-09T05:41:14.462465+00:00'

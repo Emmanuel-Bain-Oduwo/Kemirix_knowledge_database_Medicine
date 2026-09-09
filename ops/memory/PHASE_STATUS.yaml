@@ -38,3 +38,13 @@ required_checks_configuration: pass # foundation + kemirix-agent-gate both requi
 auto_delete_head_branches: pending_owner_configuration
 agent_gate_publication: pass # kemirix-agent-gate SUCCESS published on PRs #3, #4, #6, #8, #9, #10, #11 and #13.
 phase_1_2_contract_hardening: complete # PHASE1-2-CONTRACT-HARDENING-001 merged at 6876f04 (PR #13); six still-valid PR #10 findings closed; deployed, verified, lifecycle closed.
+phase_3_storage: complete # STORAGE-001 merged at 0667b26 (PR 15); immutable S3 raw vault; deployed+verified+closed.
+phase_4_ingestion: complete # INGESTION-CORE-001 merged at afb952a (PR 16); shared acquisition framework; deployed+verified+closed.
+phase_5_database: complete # DATABASE-001 merged at 9f97f46 (PR 17); runner proven live on the dev DB; deployed+verified+closed.
+phase_6_kmx_reconciled: complete # KMX-001 audit: canonical KMX DDL satisfied by KMX-SCHEMA-001 (b36b909); no code change per directive.
+phase_7_resolver: complete # KMX-002 merged at 279f9d0 (PR 18); deterministic resolver; deployed+verified+closed.
+phase_8_builders: complete # KMX-003 merged at c0f18e6 (PR 19); ING/CD/PROD builders with strict PROD gate; deployed+verified+closed.
+phase_9_rxnorm_code: complete # S01-RXNORM-001 merged at 8543ed7 (PR 20); adapter/parser/loader fixture-proven; deployed+verified+closed.
+phase_10_identity_lanes_code: complete # IDENTITY-SOURCES-001 merged at cc29a09 (PR 21); S02-S05 code, fixtures only; deployed+verified+closed.
+phase_3_10_final_tooling: complete # PHASE310-FINAL-TOOLING-001 merged at 4c94ce3 (PR 22); turnkey live_rxnorm.py; deployed+verified+closed.
+phase_3_10_live_rxnorm_ingestion: blocked_owner_credentials # Code-complete; requires UTS_API_KEY and KEMIRIX_S3_* (exact procedure in docs/PHASE3_10_FINAL_REPORT.md).

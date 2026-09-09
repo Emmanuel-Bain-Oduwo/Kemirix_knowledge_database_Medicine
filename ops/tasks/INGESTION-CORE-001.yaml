@@ -1,0 +1,204 @@
+schema_version: 2
+task_id: INGESTION-CORE-001
+phase: phase_4
+goal: "Build the shared source acquisition framework and parser boundary (owner directive\
+  \ 2026-09-09, Phase 4 / INGESTION-CORE-001) around the existing storage vault client:\
+  \ src/sources/http.py (https-only httpx client with source-specific User-Agent,\
+  \ connect/read timeouts, streamed bodies, bounded exponential retries with jitter,\
+  \ Retry-After support, per-source rate limiting with an internal conservative default\
+  \ of 2 requests/second/source and max concurrency 2, NLM hosts hard-capped at or\
+  \ below the published 20 requests/second/IP ceiling); src/sources/acquisition.py\
+  \ (network bytes streamed to temp, hash, immutable Object Storage upload, manifest\
+  \ LAST, then the parser reads the stored original \u2014 parser failure preserves\
+  \ the raw; also operator-provided local file acquisition for manual/bulk lanes);\
+  \ src/sources/results.py (typed AcquisitionResult with lane/source/version/ record,\
+  \ timestamps, status, HTTP status where relevant, attempts, failure class/retryable,\
+  \ artifact and manifest references, no secrets); src/sources/base.py (the frozen\
+  \ SourceAdapter concept: acquire, save_original, verify_hash and iter_source_items\
+  \ real through the shared pieces; resolve_kmx, create_source_blocks and build_full_evidence\
+  \ remain explicit not-implemented phase boundaries). The storage client gains only\
+  \ a fully tested streaming download_to read API so parsers read stored originals.\
+  \ HTTP classification is frozen: 429 retries honoring Retry-After, 408 and transient\
+  \ network errors retry bounded, 500/502/503/504 retry bounded, deterministic 4xx\
+  \ fails immediately without blind retry, success preserves the raw original first\
+  \ and only then parses the stored copy. No lane adapters, no live-source ingestion,\
+  \ no Rule logic, no Evidence, no parsers beyond the boundary."
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- src/sources
+- src/storage/client.py
+- tests
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/database
+- src/agents
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs/SOURCE_MATRIX.md
+- config
+- pyproject.toml
+- uv.lock
+base_sha: 0667b26bda4ae91d376cd3641c4b21bc8a81f1b0
+branch: agent/glm/INGESTION-CORE-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- src/sources/http.py implements the shared HTTP client over httpx with HTTPS, source-specific
+  User-Agent, connect/read timeouts, streamed response bodies written directly to
+  the caller sink, bounded exponential retries with jitter, Retry-After (seconds and
+  HTTP-date, capped), per-source rate limiting (internal conservative default 2 requests/second/source,
+  max concurrency 2/source, bounded attempts, default 5) and retry attempt metadata;
+  NLM hosts are hard-capped at or below the published 20 requests/second/IP ceiling
+  while Kemirix defaults stay far lower.
+- 'The failure classification is frozen and fail-closed: 429 retries honoring Retry-After
+  or bounded backoff+jitter; 408 and transient network errors retry bounded; 500/502/503/504
+  retry bounded; deterministic 4xx (including 400/401/403/404) fails immediately with
+  no blind retry; exhausted retries fail with the retry_exhausted class; every error
+  carries attempts and a failure class without secrets.'
+- 'src/sources/acquisition.py implements the non-negotiable parser boundary: network
+  bytes stream to a temp file, hash, immutable Object Storage upload via put_immutable,
+  manifest written LAST through the frozen hardened model, and the parser reads the
+  stored original from the vault; a parser failure leaves the raw original and manifest
+  fully preserved; operator-provided local files (manual/bulk lanes) follow the same
+  hash-then-vault path.'
+- 'src/sources/results.py provides the typed AcquisitionResult: lane/source/ version/record
+  identity, started/finished timestamps, status, HTTP status where relevant, attempts,
+  failure class and retryable flag, artifact keys and manifest reference; extra fields
+  forbidden; no secrets.'
+- src/sources/base.py declares the frozen SourceAdapter concept with acquire, save_original
+  and verify_hash real through the shared pieces, iter_source_items reading stored
+  originals, and resolve_kmx, create_source_blocks and build_full_evidence raising
+  explicit not-implemented boundary errors (no KMX, no Evidence, no Rule logic).
+- The storage client gains only a fully tested streaming download_to(object_key, destination)
+  read API; nothing else in src/storage changes.
+- "Tests cover: 200 success with raw-before-parse proven from the store, 429 with\
+  \ Retry-After then success, 5xx retry then success, deterministic 404 fails with\
+  \ one attempt, timeout, retry exhaustion, per-source rate limiter spacing, User-Agent\
+  \ header, result model validation, parser failure preserving the raw original, adapter\
+  \ boundary methods refusing KMX/Evidence work, local-file acquisition, and download_to\
+  \ streaming \u2014 all offline with mocked transports and fake stores; no live-source\
+  \ ingestion."
+- Only allowed paths change; no lane adapters, no new dependencies, no Evidence or
+  Rule implementation, no KMX resolver, no parsers beyond the declared boundary.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-09T03:05:55.695965Z'
+updated_at: '2026-09-09T03:38:29.826632Z'
+completed_at: '2026-09-09T03:38:29.826638Z'
+commit_sha: afb952a79517d992e56147c73e88d4353c769214
+deployed_sha: afb952a79517d992e56147c73e88d4353c769214
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the shared acquisition framework is fully
+    specified by the owner-approved 2026-09-09 master directive Phase 4, the frozen
+    source configs and the existing storage vault client; no upstream source is contacted
+    in this task.'
+  human_approved: false
+  timestamp: '2026-09-09T03:05:55.861798+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: http client with frozen retry classification and rate policy,
+    acquisition-to-vault orchestration with manifest last and parser reads stored
+    original, typed AcquisitionResult, SourceAdapter boundary with not-implemented
+    KMX/Evidence guards, storage download_to read API; offline tests only.'
+  human_approved: false
+  timestamp: '2026-09-09T03:05:56.014427+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 727b0d5acf8c85b584e28a09cf43bc916373eb7b
+  timestamp: '2026-09-09T03:23:41.952326+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint 727b0d5 complete: shared HTTP client with the
+    frozen retry classification (429 Retry-After, transient bounded, deterministic
+    4xx immediate fail), per-source rate limiting with NLM hard-cap, acquire-to-vault
+    with manifest last and parser reads stored originals, typed AcquisitionResult,
+    SourceAdapter boundary, storage download_to; 381 tests, ruff, config validation
+    and secret scan clean.'
+  human_approved: false
+  timestamp: '2026-09-09T03:24:31.369546+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: ff26cd2c21df7f54b29c64964289636db05324c8
+  timestamp: '2026-09-09T03:29:22.591835+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 727b0d5: all six framework checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T03:29:24.136538+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 727b0d5: frozen HTTP classification,
+    manifest-last boundary with parser reads stored originals, secret-free error surface,
+    minimal storage read API and scope verified; 381 tests, marker splits, ruff, config
+    validation and secret scan re-executed clean. Seat provenance per D020; MiniMax
+    was a real independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-09T03:30:33.899986+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 95ef52ea46849c46fe1e35aae25714b0d62fa768
+  timestamp: '2026-09-09T03:33:36.411531+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 727b0d5: all six adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T03:33:38.032735+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #16 foundation CI SUCCESS on head 727b0d5 (run
+    34307630864); kemirix-agent-gate SUCCESS published on the same head; all three
+    gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-09T03:36:06.112020+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #16 squash-merged into main at afb952a after MERGE_READY and kemirix-agent-gate
+    SUCCESS on exact head 727b0d5; main CI SUCCESS (run 34307762764).'
+  human_approved: true
+  timestamp: '2026-09-09T03:38:29.330831+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34307811070) deployed the exact
+    merged SHA: DEPLOYED_SHA=afb952a79517d992e56147c73e88d4353c769214.'
+  human_approved: true
+  timestamp: '2026-09-09T03:38:29.496582+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh afb952a: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T03:38:29.663390+00:00'
+- from: verified
+  to: closed
+  evidence: 'INGESTION-CORE-001 complete (Phase 4): shared acquisition framework with
+    frozen HTTP retry classification and NLM cap, manifest-last acquire-to-vault orchestration
+    with parser reads stored originals, typed AcquisitionResult, SourceAdapter boundary,
+    storage download_to read API; 381 tests; full review chain (real Nebius MiniMax
+    PASS, GLM PASS, real Nebius Nemotron QA_PASS on checkpoint 727b0d5), merge gate
+    MERGE_READY, agent-gate SUCCESS, squash merge at afb952a, main CI SUCCESS, exact-SHA
+    deployment verified.'
+  human_approved: true
+  timestamp: '2026-09-09T03:38:29.826639+00:00'

@@ -1,0 +1,194 @@
+schema_version: 2
+task_id: STORAGE-001
+phase: phase_3
+goal: 'Build the immutable OVH S3-compatible raw vault around the existing hardened
+  storage contract (owner directive 2026-09-09, Phase 3 / STORAGE-001): add only boto3
+  as a dependency; implement src/storage/checksum.py (streaming SHA-256 and optional
+  provider MD5 helpers; never use S3 ETag as SHA-256) and src/storage/client.py (S3
+  Signature V4 raw-vault client reading endpoint/region/bucket from approved config
+  and access credentials only from VM-side secrets; boto3 imported lazily so the domain
+  packages stay import-clean) exposing put_immutable (temp file, close, hash, deterministic
+  key, HEAD, absent then upload then verify, present with same SHA-256 then idempotent
+  success, different hash fails closed and never overwrites, safe sha256 object metadata
+  where supported), exists, remote streaming verify and write_manifest last (validated
+  through the frozen hardened Manifest model with the provenance lineage binding).
+  Secrets never enter Git, logs, manifests or exceptions. Mocked/stubbed S3 tests
+  only; no real RxNorm data in the bucket in this task. Object Storage stays the immutable
+  raw vault, never the clinical authority.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- pyproject.toml
+- uv.lock
+- src/storage
+- config/object_storage.yaml
+- tests
+- docs/OBJECT_STORAGE.md
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+- src/database
+- src/agents
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs/SOURCE_MATRIX.md
+- config/database.yaml
+- config/storage_contract.yaml
+- config/rule_contract.yaml
+- config/evidence_contract.yaml
+- config/migration_suite.yaml
+base_sha: 95c554f7603981e5e446f795e7cb4f29d4f4d98e
+branch: agent/glm/STORAGE-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- 'put_immutable implements the frozen ten-step procedure: local temp file with expected_sha256
+  verified by streaming SHA-256 (mismatch rejects the corrupted download), deterministic
+  object key validated against the frozen five-segment pattern, HEAD first; absent
+  means upload then streaming remote verify; present with the same SHA-256 means idempotent
+  success; present with a different hash fails closed and never overwrites; a safe
+  sha256 metadata field is stored when supported and the manifest SHA-256 remains
+  canonical; existing objects without hash metadata are verified by streaming rather
+  than trusting ETag.'
+- write_manifest uploads the manifest last, only after every required artifact succeeded,
+  at the provenance-derived manifest key, through the frozen hardened Manifest model
+  (extra fields forbidden, credential field names rejected, exact artifact object_key
+  lineage binding); a failed artifact never leaves a final manifest.
+- The client reads bucket/endpoint/region from approved config (config/object_storage.yaml)
+  and access credentials only from VM-side environment secrets with canonical names;
+  missing credentials fail closed with a safe error naming the variable, never printing
+  values; no secret enters logs, exceptions, manifests or reports.
+- boto3 is imported lazily inside the runtime client so importing the domain packages
+  never loads it and the existing no-external-services boundary test stays green.
+- checksum.py provides streaming SHA-256 (and optional MD5 provider checksum) helpers
+  used by the client; S3 ETag is never treated as SHA-256.
+- 'Unit tests cover: streaming checksum vectors; key safety and __release__; lane/source
+  separation; exact manifest lineage; recursive forbidden secret-field names without
+  filename substring false positives; missing object then upload; same hash then idempotent;
+  different hash then reject; failed artifact then no final manifest; remote verify
+  including a tampered object; no secret leakage in errors; all against mocked/stubbed
+  S3 with no real data.'
+- Only allowed paths change; no Evidence or Rule implementation, no ingestion, no
+  parsers, no KMX work, no new architecture beyond boto3, and the frozen keys/manifest/models
+  modules are extended rather than rewritten.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-09T02:28:32.075293Z'
+updated_at: '2026-09-09T03:01:11.447337Z'
+completed_at: '2026-09-09T03:01:11.447341Z'
+commit_sha: 0667b26bda4ae91d376cd3641c4b21bc8a81f1b0
+deployed_sha: 0667b26bda4ae91d376cd3641c4b21bc8a81f1b0
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: Phase 3 is fully specified by the owner-approved
+    2026-09-09 master directive, the frozen storage contract (config/storage_contract.yaml),
+    SKILL v5.0 sections 10/11 and the existing hardened keys/manifest modules; OVH
+    S3 compatibility is standard boto3 Signature V4.'
+  human_approved: false
+  timestamp: '2026-09-09T02:28:32.225147+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: checksum.py + client.py around the existing contract code,
+    boto3 dependency only, lazy import boundary, config endpoint/region wiring, manifest-last
+    orchestration, stubbed S3 test suite; no live bucket writes in this task.'
+  human_approved: false
+  timestamp: '2026-09-09T02:28:32.374091+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: be06d81738a7a7a7123a748c235c82df443be061
+  timestamp: '2026-09-09T02:42:57.654755+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint be06d81 complete: S3RawObjectStore with the
+    frozen ten-step immutable procedure (lazy boto3, streaming SHA-256/MD5 checksums,
+    HEAD-first, upload-then-verify, idempotent same-hash, fail-closed different-hash,
+    manifest-last via the hardened Manifest model), config endpoint/region with env
+    overrides, 357 tests, ruff, config validation and secret scan clean; domain packages
+    remain boto3-free at import time.'
+  human_approved: false
+  timestamp: '2026-09-09T02:43:24.337126+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 3769a89f6901e31cbc4d061b6bc13df772e814cb
+  timestamp: '2026-09-09T02:46:38.962461+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint be06d81: all six raw-vault checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T02:47:16.109767+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint be06d81: ten-step immutable procedure,
+    manifest-last invariant, lazy boto3 boundary, config/env credential separation
+    and scanner honesty verified; 357 tests, marker splits, ruff, config validation
+    and secret scan re-executed clean. Seat provenance per D020; MiniMax was a real
+    independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-09T02:50:07.040689+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 9910fc839e127de5a468e7cb6e59a65bd9b38bd6
+  timestamp: '2026-09-09T02:54:06.262846+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint be06d81: all six adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T02:54:36.670077+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #15 foundation CI SUCCESS on head be06d81 (run
+    34305126992); kemirix-agent-gate SUCCESS published on the same head; all three
+    gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-09T02:58:00.937079+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #15 squash-merged into main at 0667b26 after MERGE_READY and kemirix-agent-gate
+    SUCCESS on exact head be06d81; main CI SUCCESS (run 34305239329).'
+  human_approved: true
+  timestamp: '2026-09-09T03:01:10.965595+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34305284538) deployed the exact
+    merged SHA: DEPLOYED_SHA=0667b26bda4ae91d376cd3641c4b21bc8a81f1b0.'
+  human_approved: true
+  timestamp: '2026-09-09T03:01:11.128495+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh 0667b26: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T03:01:11.288243+00:00'
+- from: verified
+  to: closed
+  evidence: "STORAGE-001 complete (Phase 3): immutable OVH S3 raw vault \u2014 S3RawObjectStore\
+    \ with the frozen ten-step put_immutable procedure, streaming SHA-256/MD5 checksums,\
+    \ manifest-last writes through the hardened frozen model, lazy boto3 boundary,\
+    \ config/env credential separation, 357 tests with fully mocked S3; full review\
+    \ chain (real Nebius MiniMax PASS, GLM PASS, real Nebius Nemotron QA_PASS on checkpoint\
+    \ be06d81), merge gate MERGE_READY, agent-gate SUCCESS, squash merge at 0667b26,\
+    \ main CI SUCCESS, exact-SHA deployment verified. Program memory synchronization\
+    \ and the final integrated report land at the program closeout per the directive."
+  human_approved: true
+  timestamp: '2026-09-09T03:01:11.447342+00:00'

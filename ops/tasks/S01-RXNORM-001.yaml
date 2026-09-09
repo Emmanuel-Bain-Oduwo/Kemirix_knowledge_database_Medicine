@@ -1,0 +1,214 @@
+schema_version: 2
+task_id: S01-RXNORM-001
+phase: phase_9
+goal: 'Build the production RxNorm adapter, RRF parser and KMX loader (owner directive
+  2026-09-09, Phase 9 / S01-RXNORM-001) fully with fixtures and offline tests; the
+  one authorized live download is deferred until after Phase 10 merges. src/sources/rxnorm/release.py
+  implements official release discovery (uts-ws.nlm.nih.gov/releases?releaseType=rxnorm-full-monthly-release&current=true,
+  verified live JSON shape) and pinned-release verification that fails closed with
+  PINNED_RELEASE_MISMATCH on any drift; the program pin is the RxNorm full monthly
+  release of 2026-09-08, file RxNorm_full_09082026.zip, official MD5 34dd95b0ae128fb81bc68166944514f2,
+  official URL https://download.nlm.nih.gov/umls/kss/rxnorm/RxNorm_full_09082026.zip,
+  and RxNorm_full_current.zip is never used. src/sources/rxnorm/download.py builds
+  the authenticated UTS download URL (apiKey as query parameter from the UTS_API_KEY
+  secret environment, never logged) on top of the shared Phase 4 HTTP client with
+  the NLM ceiling respected, and verifies the official pinned MD5 before computing
+  the canonical SHA-256. src/sources/rxnorm/rrf.py streams pipe-delimited UTF-8 RRF
+  members located by basename with the official column layouts and SAB=RXNORM plus
+  SUPPRESS filters. src/sources/rxnorm/loader.py runs the deterministic bulk passes
+  over the stored original: A) canonical IN anchors mint/reuse KMX-ING; B) PINs mint
+  their own precise identities and associate to the base ING through the officially
+  proven form_of relation only; C) SCD structural identities mint/reuse brand-neutral
+  KMX-CD; D) CD to ING containment with deterministic ordinals (SCD consists_of SCDC
+  has_ingredient IN, plus SCD has_ingredients MIN has_part IN/PIN for combinations);
+  E) exact RXCUI external identifiers; F) SBD brand aliases projected onto existing
+  CDs only through the proven tradename_of relation; G) unresolved structures record
+  mapping exceptions. Zero KMX-PROD from RxNorm. No parallel RxNorm mirror: the raw
+  release stays in Object Storage, normalized KMX goes to PostgreSQL.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- src/sources
+- tests
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/storage
+- src/database
+- src/agents
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs
+- config
+- pyproject.toml
+- uv.lock
+base_sha: c0f18e6139b83cc9ba8d9b6e1e902f91c70fbba5
+branch: agent/glm/S01-RXNORM-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- src/sources/rxnorm/release.py parses the verified live discovery payload shape (JSON
+  list with fileName, releaseVersion, releaseDate, downloadUrl, releaseType, product,
+  current), requires exactly one current RxNorm full monthly release, validates type/product/filename,
+  and pins the release into acquisition metadata before download; verify_pinned fails
+  closed with PINNED_RELEASE_MISMATCH on filename, version or URL drift and never
+  silently ingests a newer release; the pinned constants match the directive exactly.
+- src/sources/rxnorm/download.py builds the authenticated download URL with the UTS_API_KEY
+  environment credential only, never logs the key or the full URL, streams through
+  the shared Phase 4 HTTP client (NLM ceiling respected, honor 429), and verifies
+  the official pinned MD5 before the canonical SHA-256 is computed.
+- src/sources/rxnorm/rrf.py streams RRF members located by basename (case-insensitive,
+  any ZIP directory prefix) with the official RXNCONSO (18 columns), RXNREL (16 columns)
+  and RXNSAT (13 columns) layouts, splitting on pipes with UTF-8 decoding and SAB/SUPPRESS
+  filtering; no unbounded in-memory buffering.
+- 'src/sources/rxnorm/loader.py implements the deterministic passes with the official
+  relation directions (RXCUI2 RELA RXCUI1): IN anchors; PIN identities with form_of-proven
+  base association; SCD clinical drugs whose ingredient members come from consists_of/has_ingredient
+  plus has_ingredients/has_part; deterministic ordinals; exact RXCUI external identifiers;
+  SBD aliases only through proven tradename_of; mapping exceptions for unresolved
+  structures; suppressibility respected (only SUPPRESS=N rows); the full-release versus
+  prescribable (CVF=4096) distinction tracked in statistics; zero KMX-PROD.'
+- 'src/sources/rxnorm/adapter.py wires the full pinned flow (discovery, pin verification,
+  authenticated download, MD5 verification, SHA-256, immutable vault upload, manifest
+  last, parse the stored copy, load KMX) for the final live execution, and an offline
+  integration test proves the whole flow end-to-end with fixtures: fake HTTP discovery
+  and download, a realistic synthetic RRF ZIP, the fake vault and the real loader
+  against the fake repository/builder stack.'
+- Tests cover release parsing and pin drift, download URL secret safety, MD5 verification,
+  RRF parsing (nested member location, filters), every loader pass (IN, PIN proven
+  and unproven, single and combination SCD with ordinals, aliases, suppressibility,
+  unresolved-structure exceptions), rerun idempotency (second load reuses everything),
+  zero PROD, statistics, and the adapter end-to-end flow including PINNED_RELEASE_MISMATCH.
+  No live network access in any test.
+- Only allowed paths change; no Evidence or Rule implementation, no other lane adapters,
+  no changes to the frozen kmx/storage/database contracts beyond calling them.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-09T04:50:03.018912Z'
+updated_at: '2026-09-09T05:13:03.508653Z'
+completed_at: '2026-09-09T05:13:03.508659Z'
+commit_sha: 8543ed7367116afd04de977086d960504ea0bea0
+deployed_sha: 8543ed7367116afd04de977086d960504ea0bea0
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'Official behavior researched live per the directive: the UTS releases
+    endpoint was called and returns the exact documented JSON shape (list with fileName/releaseVersion/releaseDate/downloadUrl/releaseType/product/current,
+    current entry matching the pinned 2026-09-08 release); the RxNorm technical documentation
+    and the official RELA appendix confirmed the RRF column layouts (RXNCONSO 18,
+    RXNREL 16, RXNSAT 13 columns) and the RXCUI2-to-RXCUI1 relation direction (SCDC
+    has_ingredient IN, PIN form_of IN, SCD consists_of SCDC, SCD has_ingredients MIN,
+    MIN has_part IN, SBD tradename_of SCD); SUPPRESS semantics (N/O/Y/E) and the CVF=4096
+    prescribable subset confirmed.'
+  human_approved: false
+  timestamp: '2026-09-09T04:50:03.176246+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: release discovery and pinned verification, authenticated
+    download with MD5 check, streaming RRF parser, deterministic loader passes A-G
+    with zero PROD, adapter orchestration; full fixture-based offline test suite including
+    an end-to-end fake flow.'
+  human_approved: false
+  timestamp: '2026-09-09T04:50:03.332358+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: ab6bdfda7ee066fac2af53bbc06be44ab7479a9b
+  timestamp: '2026-09-09T05:02:19.758408+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint ab6bdf complete: release discovery verified
+    against the live official API shape with pinned fail-closed semantics, authenticated
+    download with MD5 verification and secret safety, streaming RRF parser, deterministic
+    loader passes A-G with official RXCUI2-to-RXCUI1 relation directions, SBD brand
+    aliases only via tradename_of, zero PROD, full offline test suite including the
+    end-to-end adapter flow; 437 tests, ruff, config validation and secret scan clean.'
+  human_approved: false
+  timestamp: '2026-09-09T05:02:30.364407+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: f3b295a74ee411c235fadf37871503e2ae6954a4
+  timestamp: '2026-09-09T05:03:40.304961+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint ab6bdf: all five RxNorm lane checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T05:03:41.762759+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint ab6bdf: pin semantics, official relation
+    directions, deterministic passes, zero-PROD invariant, vault ordering and stored-copy
+    parsing verified; 437 tests and all local gates re-executed clean. Seat provenance
+    per D020; MiniMax was a real independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-09T05:04:26.967301+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 64e9ebd22d28a104b9a60e764387592f09ddfc7a
+  timestamp: '2026-09-09T05:06:09.183912+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint ab6bdf: all five adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T05:06:10.796229+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 34b3e2db19d577f759b7f5a662c7beaeddee8ef4
+  timestamp: '2026-09-09T05:09:29.903632+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #20 foundation CI SUCCESS on head ab6bdf (run 34313571880);
+    kemirix-agent-gate SUCCESS published on the same head; all three gate-required
+    reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-09T05:10:08.739855+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #20 squash-merged into main at 8543ed7 after MERGE_READY and kemirix-agent-gate
+    SUCCESS on exact head ab6bdf; main CI SUCCESS (run 34313781803).'
+  human_approved: true
+  timestamp: '2026-09-09T05:13:03.020772+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34313831436) deployed the exact
+    merged SHA: DEPLOYED_SHA=8543ed7367116afd04de977086d960504ea0bea0.'
+  human_approved: true
+  timestamp: '2026-09-09T05:13:03.182636+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh 8543ed7: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T05:13:03.346083+00:00'
+- from: verified
+  to: closed
+  evidence: 'S01-RXNORM-001 complete (Phase 9, code milestone): production RxNorm
+    adapter with verified-live release discovery and PINNED_RELEASE_MISMATCH fail-closed,
+    authenticated UTS download with official MD5 verification and secret safety, streaming
+    RRF parser, deterministic loader passes A-G with official relation directions,
+    SBD aliases via tradename_of only, zero PROD, idempotent reruns, end-to-end offline
+    adapter flow; 437 tests; full review chain (real Nebius MiniMax PASS, GLM PASS,
+    real Nebius Nemotron QA_PASS on checkpoint ab6bdf), merge gate MERGE_READY, agent-gate
+    SUCCESS, squash merge at 8543ed7, main CI SUCCESS, exact-SHA deployment verified.
+    The one authorized live ingestion runs after Phase 10 against the final integrated
+    SHA.'
+  human_approved: true
+  timestamp: '2026-09-09T05:13:03.508660+00:00'
