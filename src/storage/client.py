@@ -11,7 +11,7 @@ Credentials come exclusively from VM-side environment variables and are never
 logged, echoed into exceptions, manifests or reports.
 """
 
-from .checksum import sha256_file, sha256_stream
+from .checksum import CHUNK_SIZE, sha256_file, sha256_stream
 from .exceptions import StorageContractError
 from .keys import _segment, validate_object_key
 from .manifest import Manifest
@@ -115,6 +115,23 @@ class S3RawObjectStore:
             if _head_error_code(error) in ("404", "NoSuchKey", "NotFound"):
                 return False
             raise _safe(error, f"HEAD {object_key} failed") from None
+
+    def download_to(self, object_key, destination):
+        """Stream one stored original to a binary destination.
+
+        Parsers read the stored original through this door: the bytes come
+        from the vault, never from the network. Returns the streamed size.
+        """
+        try:
+            response = self._client.get_object(Bucket=self._bucket, Key=object_key)
+        except Exception as error:
+            raise _safe(error, f"GET {object_key} failed") from None
+        written = 0
+        with response["Body"] as stream:
+            while chunk := stream.read(CHUNK_SIZE):
+                destination.write(chunk)
+                written += len(chunk)
+        return written
 
     def verify(self, object_key, sha256):
         """Stream the remote object and compare its true SHA-256."""
