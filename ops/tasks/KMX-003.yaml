@@ -1,0 +1,205 @@
+schema_version: 2
+task_id: KMX-003
+phase: phase_8
+goal: "Implement the robust ING/CD/PROD builders with the strict PROD proof gate and\
+  \ stable concurrency-safe ID allocation (owner directive 2026-09-09, Phase 8 / KMX-003).\
+  \ src/kmx/allocation.py allocates stable KMX ids with transaction-scoped PostgreSQL\
+  \ advisory locking around per-level next-number calculation (no sequences, no new\
+  \ permanent tables, ids never random and never renumbered by refreshes). src/kmx/builders.py\
+  \ implements: the ingredient builder (RxNorm IN anchors mint/reuse KMX-ING; PIN\
+  \ is a precise ingredient that mints its own identity and is never collapsed into\
+  \ or duplicated with the base ING, associating to the base only when the official\
+  \ relationship is proven and never linking blindly; MIN never mints one fake single\
+  \ ingredient \u2014 the builder refuses and the caller resolves constituents and\
+  \ represents the combination through CD containment; exact active external identifiers\
+  \ always reuse existing KMX); the clinical-drug builder (brand-neutral formulation\
+  \ identity: resolved ingredients plus strength/concentration, dose form, release\
+  \ and identity-defining route; combination CDs create/reuse one CD with kmx.contains\
+  \ CD to each ING member under a deterministic ordinal; immediate-release versus\
+  \ extended-release, strength variants and route-specific identities are never collapsed;\
+  \ reuse happens only through exact external identifiers, never names; RxNorm branded\
+  \ concepts never mint anything here); and the product builder with the strict proof\
+  \ gate (approved regulator product lanes only \u2014 S08 ppb_register, S26 ema,\
+  \ S27 mhra \u2014 plus an exact regulator product identifier, resolved ING/CD, product\
+  \ name and regulator provenance; missing proof fails closed to PRODUCT_IDENTITY_UNPROVEN\
+  \ for kmx.mapping_exception; brand or RxNorm SBD is never sufficient; products contain\
+  \ their clinical drugs through kmx.contains). Minting is authorized only where the\
+  \ lane frozen kmx_levels contract permits the level. Each build call is atomic (registry\
+  \ + external identifiers + name index + containment in one transaction). Real RxNorm\
+  \ live ingestion may populate only ING/CD in this program; real PROD population\
+  \ belongs to Phase 11 regulator lanes."
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- src/kmx
+- tests
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/evidence
+- src/rules
+- src/sources
+- src/storage
+- src/database
+- src/agents
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs
+- config
+- pyproject.toml
+- uv.lock
+base_sha: 279f9d0c14fa818920fe9bd1bd0d149e9fd5d0be
+branch: agent/glm/KMX-003
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- src/kmx/allocation.py allocates the next stable KMX id per level using a transaction-scoped
+  advisory lock and the current maximum numeric suffix; no random ids, no renumbering
+  across refreshes, no new permanent table, and concurrent allocations in separate
+  transactions never collide.
+- The repository gains the write surface the builders need (insert KMX row, insert
+  external identifier, insert name index entry, insert containment with ordinal and
+  relationship type) while the resolver stays read-only and psycopg stays lazily imported.
+- "The ingredient builder reuses via exact active external identifiers, mints KMX-ING\
+  \ only when the lane kmx_levels contract authorizes the ingredient level, refuses\
+  \ MIN concepts outright, mints PINs as their own precise identities, and associates\
+  \ a PIN to its base ING through kmx.contains only when the official relationship\
+  \ is proven \u2014 never blindly, never by duplication or collapse."
+- The clinical-drug builder mints/reuses brand-neutral formulation identities from
+  resolved ingredients plus strength/concentration, dose form, release and identity-defining
+  route; combination CDs create one CD containing each ingredient member with deterministic
+  ordinals; distinct strengths, release characteristics, dose forms and routes never
+  collapse; reuse happens only through exact external identifiers, never names; every
+  build call is atomic across registry, external identifiers, name index and containment.
+- 'The product builder enforces the strict proof gate: only the approved regulator
+  product lanes (ppb_register, ema, mhra) with an exact regulator product identifier,
+  resolved clinical drug(s), product name and regulator provenance may create KMX-PROD;
+  every other source, brand or RxNorm SBD fails closed to PRODUCT_IDENTITY_UNPROVEN
+  for kmx.mapping_exception; products contain their clinical drugs through kmx.contains.'
+- 'Tests cover: ING reuse; proven and ambiguous PIN/base cases; MIN refusal; SCD-to-CD
+  construction; release/strength/form distinction; combination containment with deterministic
+  ordinals; duplicate RXCUI reuse; SBD never mints PROD; brand never mints PROD; product
+  builder rejects wrong source and missing regulator identifier; a regulator fixture
+  creates and reuses PROD; unauthorized lane minting refusal; concurrent allocation
+  (CI-gated against the isolated hosted CI PostgreSQL only) and refresh idempotency
+  without renumbering.'
+- Only allowed paths change; no Evidence or Rule implementation, no source adapters,
+  no live ingestion, no new dependencies.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-09T04:25:50.184775Z'
+updated_at: '2026-09-09T04:45:21.698250Z'
+completed_at: '2026-09-09T04:45:21.698255Z'
+commit_sha: c0f18e6139b83cc9ba8d9b6e1e902f91c70fbba5
+deployed_sha: c0f18e6139b83cc9ba8d9b6e1e902f91c70fbba5
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the builders are fully specified by the
+    owner-approved 2026-09-09 master directive Phase 8, the frozen five-table schema,
+    the lane kmx_levels contracts and the Phase 7 resolver/repository.'
+  human_approved: false
+  timestamp: '2026-09-09T04:25:50.339108+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: advisory-lock stable ID allocation, repository write surface,
+    atomic ingredient/clinical-drug/product builders with the strict PROD proof gate
+    and lane-level authorization; fake-based unit tests plus CI-gated concurrent-allocation
+    integration.'
+  human_approved: false
+  timestamp: '2026-09-09T04:25:50.495756+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: c380c6971f6d59f9bd921d5007286e48a430af3c
+  timestamp: '2026-09-09T04:34:29.771981+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint complete: allocation (advisory xact locks,
+    no new tables), repository write surface, three builders with the frozen semantics,
+    atomic per-build transactions, refresh-stable ids; 423 tests, ruff, config validation
+    and secret scan clean.'
+  human_approved: false
+  timestamp: '2026-09-09T04:34:31.223487+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 251db48612f75c77b3bb544791a8568659a9632c
+  timestamp: '2026-09-09T04:35:48.613289+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint c380c69: all five builder checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T04:35:50.109506+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint c380c69: allocation, write surface,
+    three builders, proof gate, atomicity and refresh stability all verified against
+    the frozen contracts; 423 tests and all local gates re-executed clean. Seat provenance
+    per D020; MiniMax was a real independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-09T04:36:28.079980+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: a48793073c46a5ff3720f0ec8a5e82adeebe1327
+  timestamp: '2026-09-09T04:39:01.794411+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint c380c69: all five adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T04:39:03.275333+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: e132b26a3abd435f976943452db68f040aeb48f6
+  timestamp: '2026-09-09T04:41:48.881370+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #19 foundation CI SUCCESS on head c380c69 (run
+    34311823510); kemirix-agent-gate SUCCESS published on the same head after the
+    report binding was corrected; all three gate-required reports bound to the same
+    head.'
+  human_approved: false
+  timestamp: '2026-09-09T04:45:21.018822+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #19 squash-merged into main at c0f18e6 after MERGE_READY and kemirix-agent-gate
+    SUCCESS on exact head c380c69; main CI SUCCESS (run 34312028820).'
+  human_approved: true
+  timestamp: '2026-09-09T04:45:21.199608+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34312070520) deployed the exact
+    merged SHA: DEPLOYED_SHA=c0f18e6139b83cc9ba8d9b6e1e902f91c70fbba5.'
+  human_approved: true
+  timestamp: '2026-09-09T04:45:21.367421+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh c0f18e6: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T04:45:21.531561+00:00'
+- from: verified
+  to: closed
+  evidence: 'KMX-003 complete (Phase 8): advisory-lock stable ID allocation, repository
+    write surface, atomic ING/CD/PROD builders with exact-identifier reuse, PIN proven-only
+    base links, MIN refusal, combination CD containment with ordinals, strict PROD
+    proof gate, lane-level minting authorization; 423 tests; full review chain (real
+    Nebius MiniMax PASS, GLM PASS, real Nebius Nemotron QA_PASS on checkpoint c380c69),
+    merge gate MERGE_READY, agent-gate SUCCESS, squash merge at c0f18e6, main CI SUCCESS,
+    exact-SHA deployment verified.'
+  human_approved: true
+  timestamp: '2026-09-09T04:45:21.698256+00:00'

@@ -1,0 +1,190 @@
+schema_version: 2
+task_id: KMX-002
+phase: phase_7
+goal: 'Implement the deterministic KMX repository and resolver (owner directive 2026-09-09,
+  Phase 7 / KMX-002): src/kmx/normalizer.py with conservative identity normalization
+  (Unicode NFKC, case folding and whitespace collapse only; strength, concentration,
+  route, release type, stereochemistry, salts/isomers, combination ingredients and
+  all punctuation are treated as identity-bearing and never stripped or collapsed);
+  src/kmx/repository.py with the psycopg-backed repository over the five frozen tables
+  (active external-identifier bindings, level-filtered normalized-name lookup, mapping-exception
+  recording with full provenance); src/kmx/resolver.py implementing the frozen deterministic
+  algorithm exactly: collect exact identifiers, look up active external bindings,
+  any identifier disagreement or cross-identifier disagreement fails to mapping_exception
+  IDENTIFIER_CONFLICT, exactly one KMX resolves, more than one distinct KMX from identifiers
+  fails to mapping_exception MULTIPLE_MATCHES where a single identifier itself binds
+  several identities, no exact identifier falls back to conservative exact normalized-identity
+  lookup only where the source contract permits it, one unique structural candidate
+  resolves, none fails to mapping_exception NO_MATCH, multiple or ambiguous formulation
+  candidates fail to mapping_exception FORMULATION_AMBIGUITY, and a product-level
+  request from a lane that is not an approved regulator product creator fails to mapping_exception
+  PRODUCT_IDENTITY_UNPROVEN. No LLM or name-similarity identity guesses anywhere;
+  zero external matches may only lead to minting by an authorized lane in a later
+  phase.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- src/kmx
+- tests
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/evidence
+- src/rules
+- src/sources
+- src/storage
+- src/database
+- src/agents
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs
+- config
+- pyproject.toml
+- uv.lock
+base_sha: 9f97f46201804efe4534b5ba29eb4f4f33dbe6bb
+branch: agent/glm/KMX-002
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- 'src/kmx/normalizer.py implements only conservative normalization: Unicode NFKC,
+  case folding and whitespace collapsing/trimming; every other token class (strength,
+  concentration, route, release type, stereochemistry, salts, isomers, combination
+  ingredients, punctuation) is preserved as identity-bearing, and the module documents
+  this conservatism.'
+- 'src/kmx/repository.py provides the psycopg-backed repository over the frozen five-table
+  schema: active external-identifier binding lookup by (identifier_system, identifier_value),
+  level-filtered normalized-name candidate lookup, KMX row fetch, and mapping-exception
+  recording with lane/source/version/record provenance, the frozen reason codes, the
+  normalized input and candidate KMX ids; psycopg is imported lazily so the domain
+  packages stay import-clean.'
+- src/kmx/resolver.py implements the frozen deterministic algorithm exactly as specified
+  in the goal, returns a Resolved outcome (kmx id and level) or a MappingExceptionOutcome
+  (reason code and candidates), performs no writes, makes no network or LLM calls,
+  and enforces the PRODUCT_IDENTITY_UNPROVEN boundary for product-level requests from
+  non-approved regulator product lanes (S08/S26/S27 only).
+- 'Tests cover: exact RXCUI resolution; UNII fixture resolution; zero match; multiple
+  matches from one identifier binding several KMX; identifier disagreement across
+  different identifiers pointing at different KMX; ambiguous strength/form candidates
+  through the name fallback; combination identity containment untouched by the resolver;
+  product identity unproven for a non-regulator lane; conservative normalization behavior
+  (case, whitespace, NFKC folding; strength and punctuation preserved); no-AI-path
+  assertion; and repository behavior against fakes plus a CI-gated integration test
+  against the isolated hosted CI PostgreSQL only when KEMIRIX_CI_POSTGRES=1 and GITHUB_ACTIONS=true.'
+- Only allowed paths change; no Evidence or Rule implementation, no builders or minting
+  (Phase 8), no source adapters (Phase 9/10), no new dependencies, and the frozen
+  keys/manifests/contracts are untouched.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-09T04:10:55.924331Z'
+updated_at: '2026-09-09T04:23:39.043235Z'
+completed_at: '2026-09-09T04:23:39.043240Z'
+commit_sha: 279f9d0c14fa818920fe9bd1bd0d149e9fd5d0be
+deployed_sha: 279f9d0c14fa818920fe9bd1bd0d149e9fd5d0be
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the deterministic resolver is fully specified
+    by the owner-approved 2026-09-09 master directive Phase 7, the frozen KMX schema
+    (five tables, five reason codes) and the KMX identity contract in SKILL v5.0.'
+  human_approved: false
+  timestamp: '2026-09-09T04:10:56.074603+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: conservative normalizer, psycopg-backed repository (lazy
+    import) with binding/name lookups and exception recording, side-effect-free deterministic
+    resolver with the exact frozen algorithm including the product-proof boundary;
+    fake-based unit tests plus CI-gated integration.'
+  human_approved: false
+  timestamp: '2026-09-09T04:10:56.226459+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 700e63347411d5b585523681ceaea052a5dea36e
+  timestamp: '2026-09-09T04:15:21.902106+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint complete: conservative normalizer, repository
+    with lazy psycopg, pure deterministic resolver implementing the frozen algorithm
+    exactly; 409 tests, ruff, config validation and secret scan clean; no-AI-path
+    proven by import inspection.'
+  human_approved: false
+  timestamp: '2026-09-09T04:15:23.394786+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: f383be19d873bc769f34efcc589b7d9c3c5b63a5
+  timestamp: '2026-09-09T04:16:44.678390+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 700e633: all five resolver checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T04:16:46.178981+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 700e633: conservative normalizer
+    (stricter than allowed, fail-closed direction correct), thin lazy-psycopg repository,
+    pure resolver implementing the frozen algorithm with the product-proof boundary;
+    no AI/network path proven structurally; 409 tests and all local gates re-executed
+    clean. Seat provenance per D020; MiniMax was a real independent Nebius run and
+    Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-09T04:17:43.018985+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 311f8dd52717a980677542387fd121b779b9fec4
+  timestamp: '2026-09-09T04:18:57.171002+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 700e633: all five adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T04:18:58.752711+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #18 foundation CI SUCCESS on head 700e633 (run
+    34310524722); kemirix-agent-gate SUCCESS published on the same head; all three
+    gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-09T04:21:16.892348+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #18 squash-merged into main at 279f9d0 after MERGE_READY and kemirix-agent-gate
+    SUCCESS on exact head 700e633; main CI SUCCESS (run 34310630715).'
+  human_approved: true
+  timestamp: '2026-09-09T04:23:38.571776+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34310671644) deployed the exact
+    merged SHA: DEPLOYED_SHA=279f9d0c14fa818920fe9bd1bd0d149e9fd5d0be.'
+  human_approved: true
+  timestamp: '2026-09-09T04:23:38.728070+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh 279f9d0: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T04:23:38.885724+00:00'
+- from: verified
+  to: closed
+  evidence: 'KMX-002 complete (Phase 7): conservative normalizer, psycopg-backed repository
+    with lazy import and exception recording, pure deterministic resolver with the
+    frozen algorithm (IDENTIFIER_CONFLICT, MULTIPLE_MATCHES, NO_MATCH, FORMULATION_AMBIGUITY,
+    PRODUCT_IDENTITY_UNPROVEN) and no AI/network path (AST-proven); 409 tests; full
+    review chain (real Nebius MiniMax PASS, GLM PASS, real Nebius Nemotron QA_PASS
+    on checkpoint 700e633), merge gate MERGE_READY, agent-gate SUCCESS, squash merge
+    at 279f9d0, main CI SUCCESS, exact-SHA deployment verified.'
+  human_approved: true
+  timestamp: '2026-09-09T04:23:39.043241+00:00'

@@ -89,9 +89,42 @@ correction, up-to-date branches).
   not_started (roadmap STORAGE-001 onward).
 - Codex CLI inference smoke remains structurally validated only.
 
+## Phase 3-10 autonomous program (owner directive 2026-09-09, writer glm per D020)
+
+Main is at 4c94ce31a18ab976e6fd32be62803d138b9f76dd. All eight milestones
+plus the final tooling task are MERGED, DEPLOYED, VERIFIED and CLOSED, each
+through the full chain (real Nebius MiniMax-M3 cross-check, GLM review, real
+Nebius Nemotron 3 Ultra adversarial QA, merge gate MERGE_READY,
+kemirix-agent-gate SUCCESS on the exact head, squash merge, main CI SUCCESS,
+exact-SHA deployment, verify-runtime PASS):
+
+- STORAGE-001 (Phase 3, 0667b26): immutable OVH S3 raw vault.
+- INGESTION-CORE-001 (Phase 4, afb952a): shared acquisition framework.
+- DATABASE-001 (Phase 5, 9f97f46): Psycopg 3 layer + canonical migration
+  runner (live verification on the development database).
+- KMX-001 (Phase 6): reconciliation audit — canonical KMX DDL already fully
+  satisfied by KMX-SCHEMA-001 (b36b909); no code change per the directive.
+- KMX-002 (Phase 7, 279f9d0): deterministic resolver and repository.
+- KMX-003 (Phase 8, c0f18e6): ING/CD/PROD builders with the strict PROD
+  proof gate and advisory-lock stable IDs.
+- S01-RXNORM-001 (Phase 9, 8543ed7): production RxNorm adapter, RRF parser
+  and deterministic KMX loader (zero PROD, idempotent reruns).
+- IDENTITY-SOURCES-001 (Phase 10, cc29a09): S02-S05 identity-enrichment
+  code, all fixture-tested offline.
+- PHASE310-FINAL-TOOLING-001 (4c94ce3): turnkey live-run script
+  scripts/live_rxnorm.py plus the adapter statistics return.
+
+The one authorized live ingestion (pinned RxNorm full monthly release
+RxNorm_full_09082026.zip of 2026-09-08, official MD5
+34dd95b0ae128fb81bc68166944514f2) is code-complete and blocked only on two
+owner-side credentials (UTS_API_KEY for the authenticated download and the
+KEMIRIX_S3_* pair for the vault upload; see docs/PHASE3_10_FINAL_REPORT.md
+for the turnkey procedure). 446 tests; every gate green at every milestone.
+
 ## Next roadmap task ready to start
 
-STORAGE-001 (immutable S3 raw vault) per the execution book phase table —
-from main 6876f04. Phase 3 has NOT started; no STORAGE-001, INGESTION-CORE-001,
-DATABASE-001, KMX resolver, RxNorm/DailyMed ingestion, Evidence DDL, Rule DDL
-or source loading work has begun (all remain roadmap items).
+Run the pinned RxNorm live ingestion once the owner provisions the two
+credentials (exact procedure in docs/PHASE3_10_FINAL_REPORT.md), then Phase
+11 per the execution book (regulator product identity lanes). Phase 3-10
+code work is complete. Evidence, Rules, Phase 11 and S02-S05 live bulk
+downloads have NOT started.

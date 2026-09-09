@@ -1,0 +1,196 @@
+schema_version: 2
+task_id: KMX-001
+phase: phase_6
+goal: 'Reconcile the canonical KMX DDL milestone (owner directive 2026-09-09, Phase
+  6 / KMX-001) against live main: audit migrations/001_kmx.sql, the applied development
+  schema and the frozen contracts (SKILL v5.0 sections 2/2A/11, execution book sections
+  6.1-6.5, config/database.yaml) to determine whether the already-merged and already-applied
+  KMX-SCHEMA-001 work fully satisfies canonical KMX-001. If satisfied: record that
+  Phase 6 is already materially satisfied by the earlier approved task, add no duplicate
+  or rewritten schema, and prove the state through DATABASE-001 (the migration runner
+  from-zero apply, idempotent verification and prefix upgrades plus the CI migration-from-zero
+  gate). If a genuine gap exists: fix it minimally and safely without editing the
+  already-applied historical migration. This milestone is an audit/reconciliation
+  record and intentionally produces no code change when the schema is correct.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- ops/reports/KMX-001
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+- src/storage
+- src/database
+- src/agents
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs
+- config
+- tests
+- pyproject.toml
+- uv.lock
+base_sha: 9f97f46201804efe4534b5ba29eb4f4f33dbe6bb
+branch: agent/glm/KMX-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- 'The audit verifies against live main and the live development database: exactly
+  five kmx tables (registry, contains, external_identifier, name_index, mapping_exception);
+  legal levels exactly ingredient/clinical_drug/product; KMX ID formats exactly KMX-ING/KMX-CD/KMX-PROD
+  six-digit with prefix bound to level; no KMX-PRES; container/member containment
+  with both-way foreign keys and no self-containment; external identifiers recordable
+  with conflicts (no global source+value unique) so disagreements fail closed into
+  mapping_exception; the name index never mints identity; mapping exception reason
+  codes exactly NO_MATCH, MULTIPLE_MATCHES, IDENTIFIER_CONFLICT, FORMULATION_AMBIGUITY
+  and PRODUCT_IDENTITY_UNPROVEN with full provenance and review-state constraints;
+  no cross-schema dependency on evidence/rules.'
+- 'The reconciliation conclusion is recorded: Phase 6 KMX-001 is already materially
+  satisfied by the earlier approved KMX-SCHEMA-001 (merged at b36b909, PR 6) and the
+  applied development schema; the milestone is proven through DATABASE-001 (migration
+  runner from-zero apply, idempotent verification, prefix upgrade paths and the CI
+  migration-from-zero gate all exercise the real DDL), so no duplicate or rewritten
+  schema and no new code change is produced by this task.'
+- Any non-blocking observation (for example a potential resolver lookup index on external
+  identifiers) is recorded honestly for a future separately approved migration rather
+  than editing the already-applied historical 001_kmx.sql in this program.
+- No Evidence or Rule DDL, no KMX resolver or builder implementation (Phase 7/8 scope),
+  no source work, and no already-applied migration is edited.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-09T04:04:57.017397Z'
+updated_at: '2026-09-09T04:09:16.147306Z'
+completed_at: '2026-09-09T04:09:16.147311Z'
+commit_sha: 9f97f46201804efe4534b5ba29eb4f4f33dbe6bb
+deployed_sha: 9f97f46201804efe4534b5ba29eb4f4f33dbe6bb
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the reconciliation is a direct audit of
+    the frozen DDL and contracts against live main 9f97f46 and the applied development
+    schema; no upstream source is involved.'
+  human_approved: false
+  timestamp: '2026-09-09T04:04:57.169757+00:00'
+- from: research
+  to: implementation
+  evidence: 'Audit performed against migrations/001_kmx.sql at main 9f97f46, the live
+    development database and the frozen contracts: exactly five kmx tables live; registry
+    constraints enforce the three legal levels, the KMX-ING/KMX-CD/KMX-PROD six-digit
+    formats with prefix bound to level, and no KMX-PRES; containment uses container/member
+    with both-way foreign keys and no self-containment; external identifiers keep
+    conflicts recordable (unique per KMX assertion, no global source+value unique)
+    so disagreements fail closed into mapping_exception; mapping_exception enforces
+    exactly the five frozen reason codes with full provenance and review-state constraints;
+    no evidence/rules cross-schema dependency exists. Conclusion: canonical KMX-001
+    is fully satisfied by the already-approved KMX-SCHEMA-001 (merged b36b909, PR
+    6) and the applied development schema, proven through DATABASE-001 (runner from-zero
+    apply, idempotent verification, prefix upgrades, CI migration-from-zero gate).
+    No code change is warranted; one non-blocking observation recorded (a potential
+    external_identifier (identifier_system, identifier_value) lookup index for the
+    Phase 7 resolver hot path, to be considered by a future separately approved migration
+    rather than editing the applied 001_kmx.sql).'
+  human_approved: false
+  timestamp: '2026-09-09T04:04:57.320235+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation is the audit record itself: canonical KMX-001 is satisfied
+    by prior approved work (KMX-SCHEMA-001 b36b909) and the applied development schema;
+    no writer checkpoint exists because no code change is produced, per the owner
+    directive instruction not to duplicate correct work.'
+  human_approved: false
+  timestamp: '2026-09-09T04:05:34.021245+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: 545a1caa2bc718014e77ec361bb28f20980fb3a7
+  timestamp: '2026-09-09T04:07:00.060074+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    on the Phase 6 reconciliation audit: all three checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T04:07:01.584344+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS on the Phase 6 reconciliation audit: every audited claim
+    independently re-verified against the DDL, the frozen contracts, the live development
+    database and the repository tests; satisfied-by-prior-work conclusion sound; deferred
+    index observation correctly scoped. Seat provenance per D020; MiniMax was a real
+    independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-09T04:07:25.710843+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: db6b13333eb7d9db38cf376c73b42d1e98958183
+  timestamp: '2026-09-09T04:09:00.776738+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    on the Phase 6 reconciliation audit: all three checks OK. CI evidence: the audited
+    main 9f97f46 already carries green foundation CI (run 34309162131) and a verified
+    exact-SHA deployment; this audit milestone introduces no code change requiring
+    new CI.'
+  human_approved: false
+  timestamp: '2026-09-09T04:09:02.279918+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'Phase 6 audit milestone: no PR and no merge required (no code change);
+    the audited main 9f97f46 is itself the green, deployed state (foundation CI run
+    34309162131 SUCCESS, Deploy development run 34309199605 SUCCESS with migration-runner
+    verification).'
+  human_approved: false
+  timestamp: '2026-09-09T04:09:15.499399+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'Phase 6 is satisfied-by-prior-work, not by a new merge: canonical KMX-001
+    is the already-approved KMX-SCHEMA-001 DDL (merged at b36b909 via PR 6) present
+    in main 9f97f46 and applied live; the directive forbids duplicating correct work,
+    so the recorded commit SHA is the audited main where the milestone is verified
+    complete.'
+  human_approved: true
+  timestamp: '2026-09-09T04:09:15.662036+00:00'
+- from: merged
+  to: deployed
+  evidence: The audited main 9f97f46 is the current verified development deployment
+    (DEPLOYED_SHA=9f97f46, deploy run 34309199605, migration runner status verified
+    against the five kmx tables).
+  human_approved: true
+  timestamp: '2026-09-09T04:09:15.820712+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh 9f97f46 already recorded: DEPLOYED_SHA == expected,
+    release intact, integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T04:09:15.986744+00:00'
+- from: verified
+  to: closed
+  evidence: 'KMX-001 complete (Phase 6, audit/reconciliation): canonical KMX DDL fully
+    satisfied by KMX-SCHEMA-001 (merged b36b909, PR 6) at main 9f97f46, applied live
+    on the development PostgreSQL 17.11 and proven through DATABASE-001 (runner from-zero
+    apply, idempotent verification, prefix upgrades, CI migration-from-zero gate);
+    audit verified levels, ID formats with prefix-level binding, container/member
+    containment, recordable identifier conflicts, non-minting name index, exactly
+    the five frozen mapping-exception reason codes and no evidence/rules cross-schema
+    dependency. No code change produced per the directive (no duplication of correct
+    work). One non-blocking observation deferred for a future separately approved
+    migration: a possible (identifier_system, identifier_value) lookup index for the
+    Phase 7 resolver hot path. Review chain: real Nebius MiniMax PASS, GLM PASS, real
+    Nebius Nemotron QA_PASS on the audit conclusion.'
+  human_approved: true
+  timestamp: '2026-09-09T04:09:16.147312+00:00'

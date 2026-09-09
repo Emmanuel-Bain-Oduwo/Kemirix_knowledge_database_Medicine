@@ -1,0 +1,206 @@
+schema_version: 2
+task_id: DATABASE-001
+phase: phase_5
+goal: "Build the simple Psycopg 3 database layer and deterministic migration runner\
+  \ (owner directive 2026-09-09, Phase 5 / DATABASE-001): add only psycopg[binary]\
+  \ (never SQLAlchemy/Alembic); src/database/connection.py with credentials only from\
+  \ approved secrets or environment, TLS required by default (secure sslmodes only;\
+  \ an explicit, loudly-named allow_insecure exists solely for the isolated CI service),\
+  \ password-bearing DSNs never printed, connect/healthcheck/close with typed errors;\
+  \ src/database/transaction.py with the small BEGIN -> work -> COMMIT, exception\
+  \ -> ROLLBACK helper so identity creation plus external-ID/containment/name links\
+  \ can run atomically; src/database/migrations.py as the single canonical implementation\
+  \ of the migration plan (moved from scripts/migration_gate.py), expected-tables\
+  \ extraction and the apply-or-verify runner: read repository migration-suite readiness,\
+  \ execute only reviewed ready migrations in deterministic order in one transaction,\
+  \ support clean PostgreSQL 17 from-zero apply, deterministic idempotent verification\
+  \ of the applied prefix, prefix-based multi-migration upgrades, fail closed on partial/foreign/unexpected\
+  \ state and never silently skip a required executable migration \u2014 without adding\
+  \ a migration-history table to the frozen inventory. scripts/migration_gate.py delegates\
+  \ its plan to the library (identical CI behavior) and scripts/runtime.py executes\
+  \ development migrations through the release venv runner (stdlib-only runtime.py\
+  \ preserved), unlocking the multi-migration development upgrade path while keeping\
+  \ every existing fail-closed semantic."
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- pyproject.toml
+- uv.lock
+- src/database
+- scripts/migration_gate.py
+- scripts/runtime.py
+- tests
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations
+- src/kmx
+- src/evidence
+- src/rules
+- src/sources
+- src/storage
+- src/agents
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs/SOURCE_MATRIX.md
+- config
+base_sha: afb952a79517d992e56147c73e88d4353c769214
+branch: agent/glm/DATABASE-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- src/database/connection.py connects through psycopg (imported lazily so the domain
+  packages stay import-clean) with credentials only from parameters, a URL or PG*
+  environment variables, secure sslmodes required by default (require/verify-ca/verify-full),
+  an explicit allow_insecure escape used only by isolated CI tests, no password-bearing
+  DSN in any error or string, a healthcheck proving PostgreSQL 17, and typed DatabaseConnectionError
+  wrapping that never leaks credential material.
+- 'src/database/transaction.py provides the small transaction context helper: BEGIN,
+  yield, COMMIT; exception triggers ROLLBACK and re-raise; nested callers get deterministic
+  atomicity for identity creation plus external-ID/containment/name links.'
+- 'src/database/migrations.py holds the single canonical migration logic: contains_sql,
+  plan (readiness from config/migration_suite.yaml with the exact inventory/order/prefix/content
+  validation) and expected table extraction; the apply_or_verify runner executes only
+  the reviewed ready prefix in deterministic order inside one transaction, applies
+  from zero on a clean PostgreSQL 17, verifies an already-applied prefix idempotently,
+  performs prefix-based multi-migration upgrades, and fails closed on partial, foreign
+  or unexpected state without ever silently skipping a required executable migration;
+  no migration-history table is added to the frozen 5+6+3 inventory.'
+- scripts/migration_gate.py delegates plan/contains_sql to the library with identical
+  CLI behavior for the CI PostgreSQL 17 gate, and scripts/runtime.py stays standard-library-only
+  while executing development migrations through the release venv runner with operator-provisioned
+  PG* environment credentials, preserving the PostgreSQL 17 check, from-zero single
+  transaction apply, idempotent prefix verification, empty-database refusal and every
+  other fail-closed semantic while unlocking multi-migration upgrades.
+- "Tests cover: URL/env credential parsing and secret safety (no password in errors\
+  \ or representations), secure sslmode enforcement, healthcheck, transaction commit\
+  \ and rollback, migration order and ready-vs-pending planning, expected-table extraction,\
+  \ from-zero apply, idempotent verification, prefix upgrade, foreign/partial state\
+  \ failure and migration rollback \u2014 unit tests against fakes plus CI-gated integration\
+  \ tests against the isolated hosted CI PostgreSQL only when KEMIRIX_CI_POSTGRES=1\
+  \ and GITHUB_ACTIONS=true (never against any development or production database)."
+- Only allowed paths change; psycopg[binary] is the only new dependency; no SQLAlchemy,
+  Alembic or other frameworks; no Evidence or Rule DDL; 002 and 003 stay non-executable
+  pending placeholders.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-09T03:41:59.982630Z'
+updated_at: '2026-09-09T04:01:40.362046Z'
+completed_at: '2026-09-09T04:01:40.362051Z'
+commit_sha: 9f97f46201804efe4534b5ba29eb4f4f33dbe6bb
+deployed_sha: 9f97f46201804efe4534b5ba29eb4f4f33dbe6bb
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the layer is fully specified by the owner-approved
+    2026-09-09 master directive Phase 5, the frozen database contract (5+6+3), the
+    existing migration gate semantics and the D022 development-migration policy.'
+  human_approved: false
+  timestamp: '2026-09-09T03:42:00.137528+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: lazy-psycopg connection with secure sslmodes, transaction
+    helper, canonical migration plan/runner with prefix upgrades and fail-closed state
+    validation, migration_gate delegation, runtime venv-bridge preserving stdlib-only
+    runtime.py; unit + CI-gated integration tests.'
+  human_approved: false
+  timestamp: '2026-09-09T03:42:00.293069+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 222491783cc8dcf9491646598b6602d708d66c8a
+  timestamp: '2026-09-09T03:50:23.242015+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint 2224917 complete: lazy-psycopg connection with
+    secure sslmodes and secret-free errors, BEGIN/COMMIT/ROLLBACK transaction helper,
+    canonical migration plan/runner (from-zero, idempotent verify, prefix upgrade,
+    fail-closed state validation, no history table), migration_gate delegation, stdlib-only
+    runtime bridge; 393 tests, ruff, config validation and secret scan clean.'
+  human_approved: false
+  timestamp: '2026-09-09T03:50:37.191197+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: e0c5cf7f25139c10b69bb245861d157724fe5be7
+  timestamp: '2026-09-09T03:51:59.229814+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 2224917: all six database-layer checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T03:52:00.645972+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 2224917: lazy-psycopg boundary, secret-free
+    errors, transaction atomicity, canonical single-source migration logic with fail-closed
+    prefix semantics, identical CI gate behavior, stdlib-only runtime bridge verified;
+    393 tests, marker splits, ruff, config validation and secret scan re-executed
+    clean. Seat provenance per D020; MiniMax was a real independent Nebius run and
+    Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-09T03:52:42.746258+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 70c628b46b8db4f92b6e2e33af7b89584472e851
+  timestamp: '2026-09-09T03:54:52.015739+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 2224917: all six adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T03:54:53.445242+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: c4273a9b67e526042481e1d14de82f1aca0fc998
+  timestamp: '2026-09-09T03:58:08.647744+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #17 foundation CI SUCCESS on head 2224917 (run
+    34308980979); kemirix-agent-gate SUCCESS published on the same head; all three
+    gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-09T03:58:51.905538+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #17 squash-merged into main at 9f97f46 after MERGE_READY and kemirix-agent-gate
+    SUCCESS on exact head 2224917; main CI SUCCESS (run 34309162131).'
+  human_approved: true
+  timestamp: '2026-09-09T04:01:39.875089+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34309199605) deployed the exact
+    merged SHA: DEPLOYED_SHA=9f97f46201804efe4534b5ba29eb4f4f33dbe6bb; the release-venv
+    migration runner executed live against the development database and returned status
+    verified with the five kmx tables.'
+  human_approved: true
+  timestamp: '2026-09-09T04:01:40.035209+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh 9f97f46: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T04:01:40.200398+00:00'
+- from: verified
+  to: closed
+  evidence: 'DATABASE-001 complete (Phase 5): Psycopg 3 layer (lazy import, secure
+    sslmodes, secret-free errors), transaction helper, canonical migration plan/runner
+    with from-zero apply, idempotent verification, prefix upgrades and fail-closed
+    state validation; migration_gate delegates to the library; stdlib-only runtime
+    bridge proven live on the development deployment; 393 tests; full review chain
+    (real Nebius MiniMax PASS, GLM PASS, real Nebius Nemotron QA_PASS on checkpoint
+    2224917), merge gate MERGE_READY, agent-gate SUCCESS, squash merge at 9f97f46,
+    main CI SUCCESS, exact-SHA deployment verified with live migration-runner verification.'
+  human_approved: true
+  timestamp: '2026-09-09T04:01:40.362052+00:00'
