@@ -90,9 +90,10 @@ def run_pinned_rxnorm_ingestion(
         store.write_manifest(manifest)
     # Parser reads the STORED original, never the network bytes.
     loader = RxNormKmxLoader(builder, repository)
+    stats = {}
 
     def parser(destination):
-        loader.load(Path(destination.name))
+        stats.update(loader.load(Path(destination.name)))
 
     with tempfile.NamedTemporaryFile(prefix="kemirix-rxnorm-parse-") as parse_temp:
         parse_result = parse_stored_original(
@@ -109,7 +110,7 @@ def run_pinned_rxnorm_ingestion(
         )
     if parse_result.status != "succeeded":
         raise SourceContractError(f"pinned RxNorm parse failed: {parse_result.failure_class}")
-    return {"put": put.status, "sha256": sha256, "manifest": manifest}
+    return {"put": put.status, "sha256": sha256, "manifest": manifest, "stats": stats}
 
 
 def _now():

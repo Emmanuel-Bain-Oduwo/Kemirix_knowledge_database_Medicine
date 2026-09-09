@@ -582,6 +582,9 @@ def test_adapter_end_to_end_pinned_flow(tmp_path, monkeypatch):
     )
     assert result["put"] == "uploaded"
     assert result["sha256"] == hashlib.sha256(release_bytes).hexdigest()
+    # The loader statistics ride the result for the final QA metrics.
+    assert result["stats"]["ing_created"] == 1
+    assert result["stats"]["cd_created"] == 1
     # Vault order: raw first, manifest LAST, then the parser read the STORED copy.
     assert [call[0] for call in store.calls] == ["put", "manifest", "get"]
     # The KMX load ran from the stored original.
