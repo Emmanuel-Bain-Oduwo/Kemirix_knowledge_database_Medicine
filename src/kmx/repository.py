@@ -122,3 +122,50 @@ class KmxRepository:
             ),
         ).fetchone()
         return row[0]
+
+    # --- write surface used by the builders (the resolver stays read-only) ---
+
+    def insert_kmx(self, *, kmx_id, level, preferred_name, normalized_name):
+        """Insert one registry row (the caller owns the transaction)."""
+        self._connection.execute(
+            "INSERT INTO kmx.registry (kmx_id, level, preferred_name, normalized_name) "
+            "VALUES (%s, %s, %s, %s)",
+            (kmx_id, level, preferred_name, normalized_name),
+        )
+
+    def insert_external_identifier(
+        self, *, kmx_id, identifier_system, identifier_value, source_id, jurisdiction=None
+    ):
+        """Bind one external identifier to exactly one KMX assertion."""
+        self._connection.execute(
+            "INSERT INTO kmx.external_identifier (kmx_id, identifier_system, "
+            "identifier_value, source_id, jurisdiction) VALUES (%s, %s, %s, %s, %s)",
+            (kmx_id, identifier_system, identifier_value, source_id, jurisdiction),
+        )
+
+    def insert_name(self, *, kmx_id, normalized_name, name_type, source_id, language="en"):
+        """Add one name index entry. Names never mint identity."""
+        self._connection.execute(
+            "INSERT INTO kmx.name_index (kmx_id, normalized_name, name_type, "
+            "source_id, language) VALUES (%s, %s, %s, %s, %s)",
+            (kmx_id, normalized_name, name_type, source_id, language),
+        )
+
+    def insert_containment(
+        self, *, container_kmx_id, member_kmx_id, relationship_type, ordinal=None
+    ):
+        """Record one containment edge with its deterministic ordinal."""
+        self._connection.execute(
+            "INSERT INTO kmx.contains (container_kmx_id, member_kmx_id, "
+            "relationship_type, ordinal) VALUES (%s, %s, %s, %s)",
+            (container_kmx_id, member_kmx_id, relationship_type, ordinal),
+        )
+
+    def existing_containment(self, *, container_kmx_id, member_kmx_id, relationship_type):
+        """True when this exact containment edge already exists."""
+        row = self._connection.execute(
+            "SELECT 1 FROM kmx.contains WHERE container_kmx_id = %s "
+            "AND member_kmx_id = %s AND relationship_type = %s",
+            (container_kmx_id, member_kmx_id, relationship_type),
+        ).fetchone()
+        return row is not None
