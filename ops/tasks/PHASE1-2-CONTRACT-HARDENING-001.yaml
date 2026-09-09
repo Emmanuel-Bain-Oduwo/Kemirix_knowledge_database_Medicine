@@ -1,0 +1,208 @@
+schema_version: 2
+task_id: PHASE1-2-CONTRACT-HARDENING-001
+phase: phase_2
+goal: 'Close the six still-valid PR #10 review findings against current main (audited
+  VALID_AND_UNFIXED after the Phase 1/2 delivery): bind every manifest artifact object_key
+  exactly to its manifest provenance (fail closed, never rewritten); freeze the full
+  structural Rule field contract (clinical_rule 17-part model, rule_evidence, rule_test)
+  in config/rule_contract.yaml without implementing 003_rules.sql; freeze and enforce
+  the exact owner-approved S01-S27 rule policies through one canonical config representation
+  (arbitrary policy strings fail); align docs/OBJECT_STORAGE.md with the frozen five-segment
+  layout, __release__ bulk keys, full manifest fields and the lane/source authority
+  boundary; update the 002_evidence.sql placeholder to list exactly the six planned
+  Evidence tables while remaining non-executable; and replace the forbidden-manifest-field
+  substring scan with recursive exact key inspection so legitimate values like secretin.xml
+  pass while forbidden credential field names still fail. The seventh finding (canonical
+  memory synchronization) was already fixed by FOUNDATION-PHASE12-CLOSEOUT-001 and
+  is not redone here; post-merge memory sync for this task happens through the closing
+  flow.'
+production_writer: glm
+researcher: kimi
+cross_checker: minimax
+reviewer: glm
+validator: nemotron
+active_writer: glm
+writer_priority:
+- codex
+- glm
+- minimax
+- kimi
+allowed_paths:
+- src/storage/manifest.py
+- src/sources/config.py
+- config/rule_contract.yaml
+- docs/OBJECT_STORAGE.md
+- migrations/002_evidence.sql
+- tests/test_domain_contracts.py
+- tests/test_core.py
+forbidden_paths:
+- SKILL.md
+- ops/memory/INVARIANTS.md
+- migrations/001_kmx.sql
+- migrations/003_rules.sql
+- config/migration_suite.yaml
+- src/agents
+- src/kmx
+- src/evidence
+- src/rules
+- src/database
+- opencode.json
+- .github
+- ops/memory
+- ops/tasks
+- docs/SOURCE_MATRIX.md
+- config/database.yaml
+- config/storage_contract.yaml
+base_sha: dfae74a99dfea019eab6ab46482f199d02f20cbb
+branch: agent/glm/PHASE1-2-CONTRACT-HARDENING-001
+research_required: false
+owner_approved_skill_update: false
+acceptance_criteria:
+- src/storage/manifest.py gains a manifest-level model validator that binds each artifact
+  object_key to exactly build_object_key(manifest.source_id, manifest.source_version,
+  manifest.source_record_key, artifact.original_filename); mismatch fails closed and
+  is never silently rewritten; existing sha256/byte-size/unknown-field/controlled-value
+  validation is preserved.
+- config/rule_contract.yaml freezes the complete structural field inventories for
+  clinical_rule (rule_id, target_kmx_id, target_level, category, jurisdiction, patient_trigger,
+  required_patient_data, verdict, verdict_reason, severity, severity_reason, immediate_action,
+  action_reason, recommendation, recommendation_reason, alternatives, risk_factors,
+  monitoring, follow_up, status, created_at, updated_at, reviewed_at, reviewed_by),
+  rule_evidence (rule_id, evidence_id, support_role, supports_fields, ordinal) and
+  rule_test (test_id, rule_id, test_name, patient_fixture, expected_outcome, expected_decision_fields,
+  active), plus the exact three outcomes with all-trigger MATCH, missing-data CANNOT_FULLY_EVALUATE
+  and wrong-formulation NO_MATCH semantics, immutable Evidence inheritance and the
+  no-remapping invariant.
+- config/rule_contract.yaml gains one canonical frozen source_rule_policies map for
+  S01-S27 with each lane exact approved rule policy; tests enforce every config against
+  it exactly (S06 rules true passes, "disabled"/"false_initially"/arbitrary strings
+  fail), and the SourceConfig model rejects arbitrary rule-policy strings on non-primary
+  lanes (only false or false_initially allowed).
+- 'docs/OBJECT_STORAGE.md matches config/storage_contract.yaml, src/storage/keys.py
+  and SKILL.md: five-segment layout, __release__ bulk examples, full manifest field
+  list, lane_id manifest-only / source_id in key, upload semantics and the PostgreSQL
+  authority boundary.'
+- migrations/002_evidence.sql placeholder comments list exactly the six planned Evidence
+  tables (source, source_version, source_block, block_subject, clinical_evidence,
+  evidence_support), remain comment-only non-executable, and migration_suite.yaml
+  still declares it pending.
+- 'The forbidden-manifest-field check inspects mapping keys recursively and exactly
+  instead of substring-scanning values: original_filename secretin.xml passes, api_key/password/secret/presigned_url
+  fields fail (both the test helper and the production Manifest with extra=forbid).'
+- 'Regression tests cover the full directive checklist: manifest lineage (exact pass,
+  wrong source/version/record/filename fail, secretin.xml allowed, credential fields
+  fail), rule contract inventories and semantics, exact S01-S27 authority policies
+  with negative drift detection, storage docs consistency, and the six-table non-executable
+  Evidence placeholder.'
+- No real Evidence or Rule DDL is implemented, no source ingestion, no S3 client,
+  no PostgreSQL pool, no parsers, no Phase 3 work; only the allowed paths change.
+required_tests:
+- foundation
+status: closed
+created_at: '2026-09-08T19:42:51.437544Z'
+updated_at: '2026-09-09T00:46:27.609944Z'
+completed_at: '2026-09-09T00:46:27.609974Z'
+commit_sha: 6876f04d0695e45d44cd2f52c074abaa700c3891
+deployed_sha: 6876f04d0695e45d44cd2f52c074abaa700c3891
+handoffs: []
+events:
+- from: created
+  to: research
+  evidence: 'No external research required: the seven PR #10 Codex findings were audited
+    against current main dfae74a; six are VALID_AND_UNFIXED (manifest lineage, rule
+    field contract, permissive authority check, stale storage docs, four-table placeholder,
+    substring false positive) and one VALID_BUT_ALREADY_FIXED (canonical memory, fixed
+    by FOUNDATION-PHASE12-CLOSEOUT-001).'
+  human_approved: false
+  timestamp: '2026-09-08T19:42:52.304142+00:00'
+- from: research
+  to: implementation
+  evidence: 'Scope frozen: manifest lineage binding, full Rule structural contract,
+    canonical per-lane rule policies, OBJECT_STORAGE.md alignment, six-table 002 placeholder,
+    recursive key inspection for forbidden fields, and the regression checklist; no
+    Phase 3, no DDL implementation.'
+  human_approved: false
+  timestamp: '2026-09-08T19:42:52.467704+00:00'
+- operation: checkpoint
+  role: glm
+  commit_sha: 85b0ecbccd39e7a04a08d92648ff71823321d3df
+  timestamp: '2026-09-08T20:15:50.795532+00:00'
+- from: implementation
+  to: crosscheck
+  evidence: 'Implementation checkpoint 85b0ecb complete: manifest artifact lineage
+    binding (fail closed), full Rule structural contract freeze (clinical_rule/rule_evidence/rule_test),
+    canonical frozen S01-S27 source_rule_policies with non-primary model rejection,
+    OBJECT_STORAGE.md aligned to the frozen five-segment layout with __release__ bulk
+    keys, six-table non-executable 002_evidence.sql placeholder, recursive forbidden-field
+    key inspection; 337 tests, ruff, config validation and secret scan clean.'
+  human_approved: false
+  timestamp: '2026-09-08T20:18:09.342384+00:00'
+- operation: checkpoint
+  role: minimax
+  commit_sha: ddaa3cf7a2a3feb3e48fc35cad7ecc2c3b5e7377
+  timestamp: '2026-09-08T20:23:32.378174+00:00'
+- from: crosscheck
+  to: review
+  evidence: 'MiniMax-M3 independent cross-check (real Nebius API run) returned PASS
+    bound to checkpoint 85b0ecb: all seven hardening checks OK.'
+  human_approved: false
+  timestamp: '2026-09-08T20:23:47.784362+00:00'
+- from: review
+  to: qa
+  evidence: 'GLM review PASS bound to checkpoint 85b0ecb: manifest lineage validator
+    placement, full Rule structural freeze, canonical per-lane authority map, docs/placeholder/forbidden-field
+    fixes and scope all verified; 337 tests, ruff, config validation and secret scan
+    re-executed clean at the checkpoint. Seat provenance per D020 owner directive;
+    MiniMax was a real independent Nebius run and Nemotron QA follows.'
+  human_approved: true
+  timestamp: '2026-09-08T20:27:24.763879+00:00'
+- operation: checkpoint
+  role: nemotron
+  commit_sha: 5b896a2c0a79bea464ada04dc9550426c7bb2a02
+  timestamp: '2026-09-09T00:39:24.719373+00:00'
+- from: qa
+  to: ci
+  evidence: 'Nemotron 3 Ultra adversarial QA (real Nebius API run) returned QA_PASS
+    bound to checkpoint 85b0ecb: all seven adversarial checks OK.'
+  human_approved: false
+  timestamp: '2026-09-09T00:39:37.084815+00:00'
+- from: ci
+  to: awaiting_human
+  evidence: 'CI stage complete: PR #13 foundation CI SUCCESS on head 85b0ecb (run
+    34296033819); kemirix-agent-gate SUCCESS published on the same head; all three
+    gate-required reports bound to the same head.'
+  human_approved: false
+  timestamp: '2026-09-09T00:43:32.699929+00:00'
+- from: awaiting_human
+  to: merged
+  evidence: 'PR #13 squash-merged into main at 6876f04 after MERGE_READY and kemirix-agent-gate
+    SUCCESS on exact head 85b0ecb; main CI SUCCESS (run 34296228469).'
+  human_approved: true
+  timestamp: '2026-09-09T00:46:10.791724+00:00'
+- from: merged
+  to: deployed
+  evidence: 'Deploy development workflow SUCCESS (run 34296275313) deployed the exact
+    merged SHA: DEPLOYED_SHA=6876f04d0695e45d44cd2f52c074abaa700c3891.'
+  human_approved: true
+  timestamp: '2026-09-09T00:46:16.896655+00:00'
+- from: deployed
+  to: verified
+  evidence: 'verify-runtime.sh 6876f04: DEPLOYED_SHA == expected, release intact,
+    integrity PASS, smoke PASS.'
+  human_approved: true
+  timestamp: '2026-09-09T00:46:17.073603+00:00'
+- from: verified
+  to: closed
+  evidence: 'PHASE1-2-CONTRACT-HARDENING-001 complete: six still-valid PR #10 findings
+    fixed (manifest artifact lineage binding fail-closed, full Rule structural contract
+    freeze for clinical_rule/rule_evidence/rule_test, canonical frozen S01-S27 rule
+    policies with exact drift enforcement and non-primary model rejection, OBJECT_STORAGE.md
+    aligned to the frozen five-segment layout with __release__ bulk keys, six-table
+    non-executable 002_evidence.sql placeholder, recursive forbidden-field key inspection
+    with secretin.xml passing), 337 tests, full review chain (real Nebius MiniMax
+    PASS, GLM PASS, real Nebius Nemotron QA_PASS on checkpoint 85b0ecb), merge gate
+    MERGE_READY, agent-gate SUCCESS, squash merge at 6876f04, main CI SUCCESS, exact-SHA
+    deployment verified. Git-backed memory synchronization follows through the closing
+    closeout task.'
+  human_approved: true
+  timestamp: '2026-09-09T00:46:27.609975+00:00'
