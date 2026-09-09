@@ -5,54 +5,19 @@ import os
 import subprocess
 from pathlib import Path
 
-import yaml
-
 
 def contains_sql(text):
-    """Recognize whitespace/comments only, including nested comments and CR line endings."""
-    i, depth = 0, 0
-    while i < len(text):
-        if depth:
-            if text.startswith("/*", i):
-                depth += 1
-                i += 2
-            elif text.startswith("*/", i):
-                depth -= 1
-                i += 2
-            else:
-                i += 1
-        elif text[i].isspace():
-            i += 1
-        elif text.startswith("--", i):
-            while i < len(text) and text[i] not in "\r\n":
-                i += 1
-        elif text.startswith("/*", i):
-            depth = 1
-            i += 2
-        else:
-            return True
-    if depth:
-        raise ValueError("unterminated SQL comment")
-    return False
+    """Canonical implementation lives in database.migrations (single source)."""
+    from database.migrations import contains_sql as _contains_sql
+
+    return _contains_sql(text)
 
 
 def plan(root):
-    config = yaml.safe_load((root / "config/migration_suite.yaml").read_text())["migrations"]
-    listed = [item["path"] for item in config]
-    actual = [p.relative_to(root).as_posix() for p in sorted((root / "migrations").glob("*.sql"))]
-    if listed != actual or not listed or len(set(listed)) != len(listed):
-        raise ValueError("migration inventory/order mismatch")
-    ready, pending = [], []
-    for item in config:
-        path = root / item["path"]
-        sql = contains_sql(path.read_text())
-        if item["state"] == "pending" and not sql:
-            pending.append(item["path"])
-        elif item["state"] == "executable" and sql and not pending:
-            ready.append(item["path"])
-        else:
-            raise ValueError("migration declaration/content mismatch or non-prefix execution")
-    return ready, pending
+    """Canonical implementation lives in database.migrations (single source)."""
+    from database.migrations import plan as _plan
+
+    return _plan(root)
 
 
 def execute(root, ready):
