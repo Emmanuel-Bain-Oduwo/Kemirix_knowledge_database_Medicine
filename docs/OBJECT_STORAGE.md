@@ -99,6 +99,36 @@ bound to the manifest provenance; a mismatch fails closed.
 Never store credentials, bearer tokens, database passwords or presigned URLs
 in the manifest.
 
+## Runtime client (STORAGE-001)
+
+`src/storage/client.py` provides `S3RawObjectStore`, the one client that
+moves bytes into the vault (OVH Object Storage, S3 Signature V4, boto3
+imported lazily so the domain packages stay import-clean):
+
+- `from_environment()` reads the bucket/endpoint/region from
+  `config/object_storage.yaml` (env overrides `KEMIRIX_S3_ENDPOINT_URL`,
+  `KEMIRIX_S3_REGION`) and the access credentials **only** from the VM-side
+  secret environment (`KEMIRIX_S3_ACCESS_KEY_ID`,
+  `KEMIRIX_S3_SECRET_ACCESS_KEY`, optional `KEMIRIX_S3_SESSION_TOKEN`).
+  Missing credentials fail closed with an error that names the variables and
+  never prints values.
+- `put_immutable()` enforces the frozen procedure: the local temp file must
+  already be written and closed; its streamed SHA-256 must equal the expected
+  value (corrupted downloads are rejected before any remote call); the key
+  must satisfy the frozen five-segment pattern; HEAD first — absent means
+  upload then streaming verification, the same SHA-256 means idempotent
+  success, different bytes fail closed and are never overwritten.
+- `exists()` / `verify()` — the SHA-256 in the manifest is canonical; S3 ETag
+  is never treated as a hash. Objects without our sha256 metadata are
+  verified by streaming, not by trusting ETag.
+- `write_manifest()` uploads the manifest **last**, at
+  `<source_id>/<source_version>/<source_record_key>/manifest.json`, through
+  the frozen hardened Manifest model; an uploaded manifest is never rewritten
+  with different bytes.
+
+`src/storage/checksum.py` provides the streaming SHA-256 (canonical) and MD5
+(official upstream publication checksums only) helpers.
+
 ## Important boundary
 
 Object Storage stores raw source artifacts. KMX identities, normalized
