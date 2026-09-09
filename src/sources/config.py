@@ -132,6 +132,13 @@ class SourceConfig(BaseModel):
             raise SourceContractError(
                 f"{self.source_id}: non-primary source cannot independently create Rules"
             )
+        if self.role != "primary_rule" and self.rules not in (False, "false_initially"):
+            # Non-primary lanes never carry independent rule authority; the
+            # only approved non-primary conditional is false_initially (S19).
+            # Exact per-lane policies are frozen in config/rule_contract.yaml.
+            raise SourceContractError(
+                f"{self.source_id}: unknown non-primary rule policy {self.rules!r}"
+            )
         return self
 
     @property

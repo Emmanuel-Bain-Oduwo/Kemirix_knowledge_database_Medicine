@@ -1,7 +1,12 @@
 -- ARCHITECTURE PLACEHOLDER — no executable DDL yet.
 -- Planned schema: evidence
--- Planned tables:
+-- Planned tables (frozen 5+6+3 database inventory, DOMAIN-CONTRACT-001):
 --   evidence.source
+--   evidence.source_version
 --   evidence.source_block
+--   evidence.block_subject
 --   evidence.clinical_evidence
 --   evidence.evidence_support
+-- Implemented by the reviewed Evidence design task (EVIDENCE-001 roadmap
+-- position) together with its contract tests; remains non-executable until
+-- then and must not be promoted in config/migration_suite.yaml beforehand.

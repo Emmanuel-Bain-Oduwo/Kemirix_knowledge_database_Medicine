@@ -275,6 +275,87 @@ def test_object_key_builder_and_validator():
         validate_object_key("dailymed/v/k/NOT-original/spl.xml")
 
 
+def test_manifest_artifact_lineage_is_bound_to_manifest_provenance():
+    from storage.exceptions import StorageContractError
+    from storage.manifest import Manifest
+
+    base = {
+        "schema_version": 1,
+        "lane_id": "S06",
+        "source_id": "dailymed",
+        "source_version": "V1",
+        "source_record_key": "SETID1",
+        "acquisition_mode": "api",
+        "fetched_at": "2026-09-08T00:00:00Z",
+        "upstream_published_at": None,
+        "adapter_git_sha": "a" * 40,
+        "rights_status": "cleared",
+        "parse_status": "staged",
+        "artifacts": [
+            {
+                "artifact_type": "structured_document",
+                "original_filename": "spl.xml",
+                "content_type": "application/xml",
+                "byte_size": 3,
+                "object_key": "dailymed/V1/SETID1/original/spl.xml",
+                "sha256": "b" * 64,
+            }
+        ],
+    }
+
+    def with_artifact(**overrides):
+        return dict(base, artifacts=[dict(base["artifacts"][0], **overrides)])
+
+    # The exact provenance-derived key passes.
+    manifest = Manifest.model_validate(base)
+    assert manifest.artifacts[0].object_key == "dailymed/V1/SETID1/original/spl.xml"
+
+    # A harmless value containing the substring "secret" passes.
+    secretin = with_artifact(
+        original_filename="secretin.xml",
+        object_key="dailymed/V1/SETID1/original/secretin.xml",
+    )
+    assert Manifest.model_validate(secretin).artifacts[0].original_filename == "secretin.xml"
+
+    # Every provenance mismatch fails closed and is never silently rewritten.
+    for key in (
+        "ema/V1/SETID1/original/spl.xml",  # wrong source
+        "dailymed/V2/SETID1/original/spl.xml",  # wrong source version
+        "dailymed/V1/SETID2/original/spl.xml",  # wrong source record key
+        "dailymed/V1/SETID1/original/other.xml",  # wrong original filename
+    ):
+        with pytest.raises(StorageContractError):
+            Manifest.model_validate(with_artifact(object_key=key))
+
+    # Credential field names still fail (unknown fields are forbidden).
+    for field in ("secret", "api_key", "password", "presigned_url"):
+        with pytest.raises(Exception):
+            Manifest.model_validate({**base, field: "value"})
+
+
+def test_non_primary_rule_policies_fail_closed(tmp_path):
+    from sources.config import load_source_configs
+    from sources.exceptions import SourceContractError
+
+    def loaded_with(filename, rules):
+        root = tmp_path / f"tree-{filename}-{rules}"
+        root.mkdir()
+        subprocess.run(["cp", "-r", str(ROOT / "config"), str(root / "config")], check=True)
+        target = root / "config/sources" / filename
+        data = yaml.safe_load(target.read_text())
+        data["rules"] = rules
+        target.write_text(yaml.safe_dump(data))
+        return load_source_configs(root)
+
+    # A supporting lane never carries an independent rule policy.
+    for rejected in ("whatever", "disabled", True, "guideline_recommendations"):
+        with pytest.raises(SourceContractError):
+            loaded_with("18_onsides.yaml", rejected)
+    # The one approved non-primary conditional (S19 false_initially) loads.
+    configs = loaded_with("19_civic.yaml", "false_initially")
+    assert [c.source_id for c in configs if c.lane == 19] == ["civic"]
+
+
 def test_domain_packages_require_no_external_services():
     before = set(sys.modules)
     for package in DOMAIN_PACKAGES:
