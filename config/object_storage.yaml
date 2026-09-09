@@ -1,6 +1,10 @@
 object_storage:
   provider: ovh_s3_compatible
   bucket: kemirix-knowledge-raw
+  # S3 Signature V4 endpoint of the raw bucket. Confirm the bucket's OVH region
+  # before the live run; KEMIRIX_S3_ENDPOINT_URL / KEMIRIX_S3_REGION override.
+  endpoint_url: "https://s3.gra.io.cloud.ovh.net"
+  region: "gra"
   purpose: raw_source_vault
   layout: "<source_id>/<source_version>/<source_record_key>/original/"
   manifest: manifest.json
